@@ -1,13 +1,16 @@
-# zero_textfield
+# zero_ui
 
-A reusable, themeable Flutter text field — `CustomTextField` — extracted from the
-Sumo app. It ships with a floating label, an optional required marker, a built-in
-clear (×) button, and an externally controlled error state.
+Reusable, themeable Flutter UI widgets extracted from the Sumo apps. One package,
+one import, one shared color palette.
 
-- **Standalone** — no app-specific dependencies. Default colors reproduce the
-  original Sumo look; override any of them via `ZeroTextFieldColors`.
-- **Drop-in** — the class is still named `CustomTextField`, so existing call sites
-  work unchanged after switching the import.
+Widgets:
+- **`CustomTextField`** — text field with a floating label, optional required
+  marker, built-in clear button, and an external error state.
+- **`DropdownSearch<T>`** — searchable dropdown (built on `flutter_typeahead`)
+  with the same label / required-marker / clear-button / error styling.
+
+Both default to the original Sumo look via **`ZeroUiColors`**; override any color
+per widget with `colors:`.
 
 ## Install (Git dependency)
 
@@ -15,82 +18,62 @@ Add to your app's `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  zero_textfield:
+  zero_ui:
     git:
-      url: git@github.com:zerofriction-dev/zero_textfield.git
-      ref: v0.1.0   # pin to a tag (recommended)
+      url: git@github.com:zerofriction-dev/zero_ui.git
+      ref: v0.2.0   # pin to a tag (recommended)
 ```
 
 > Uses SSH — the machine that runs `flutter pub get` (including CI) needs an SSH
-> key with access to the repo. For HTTPS, use
-> `url: https://github.com/zerofriction-dev/zero_textfield.git` instead.
+> key with access to the repo.
 
-Then:
-
-```bash
-flutter pub get
-```
+Then `flutter pub get`.
 
 ## Usage
 
 ```dart
-import 'package:zero_textfield/zero_textfield.dart';
+import 'package:zero_ui/zero_ui.dart'; // CustomTextField, DropdownSearch, ZeroUiColors
 
+// Text field
 CustomTextField(
   keyboardType: TextInputType.text,
   title: 'Full name',
-  hint: 'Enter your name',
   controller: nameController,
   hasError: nameError != null,
   errorText: nameError,
-  onChanged: (v) => onNameChanged(v),
+);
+
+// Searchable dropdown
+DropdownSearch<Province>(
+  title: 'Province',
+  items: provinces,
+  itemAsString: (p) => p.nameTh,
+  suggestionsCallback: (q) => provinces,
+  itemBuilder: (ctx, p) => ListTile(title: Text(p.nameTh)),
+  onSuggestionSelected: (p, _) => onProvinceSelected(p),
 );
 ```
 
 ## Theming
 
-By default the field uses the Sumo palette. Override any color:
-
 ```dart
-CustomTextField(
-  keyboardType: TextInputType.emailAddress,
-  label: 'Email',
-  colors: const ZeroTextFieldColors(
-    primary: Colors.blue,
-    inputBorderFocused: Colors.blue,
-  ),
-);
+const blue = ZeroUiColors(primary: Colors.blue, inputBorderFocused: Colors.blue);
+
+CustomTextField(keyboardType: TextInputType.text, colors: blue, ...);
+DropdownSearch<Province>(colors: blue, ...);   // same palette, every widget
 ```
 
-Or derive from the defaults:
+`ZeroUiColors` exposes `copyWith` to derive from the defaults.
 
-```dart
-const base = ZeroTextFieldColors();
-final dark = base.copyWith(textPrimary: Colors.white);
-```
+## Adding a new widget to this package
 
-## Key parameters
-
-| Parameter | Type | Notes |
-|---|---|---|
-| `keyboardType` | `TextInputType` | **required** |
-| `controller` | `TextEditingController?` | optional; the widget creates one if null |
-| `label` / `floatingLabel` | `String?` | resting / floating label text |
-| `title` | `String?` | label rendered above the field |
-| `hint` | `String?` | placeholder |
-| `hasError` / `errorText` | `bool` / `String?` | external error state + message |
-| `isRequired` | `bool` | shows the `*` marker (default `true`) |
-| `showClearButton` | `bool` | built-in clear button (default `true`) |
-| `readOnly` / `enabled` | `bool` | tap-only / disabled states |
-| `inputFormatters` | `List<TextInputFormatter>?` | input masking |
-| `onChanged` / `onSubmit` / `onTap` / `onEmptyChanged` | callbacks | |
-| `colors` | `ZeroTextFieldColors` | color palette override |
-
-## Releasing a new version
+1. Add `lib/src/<group>/<widget>.dart` (depend on `ZeroUiColors`, no app-specific imports).
+2. `export` it from `lib/zero_ui.dart`.
+3. Add a test under `test/`.
+4. Bump `version` + `CHANGELOG.md`, then:
 
 ```bash
-# bump version in pubspec.yaml + add a CHANGELOG entry, then:
-git tag v0.2.0
+git tag v0.3.0
 git push origin main --tags
 ```
 

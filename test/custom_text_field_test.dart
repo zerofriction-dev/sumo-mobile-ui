@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zero_textfield/zero_textfield.dart';
+import 'package:zero_ui/zero_ui.dart';
 
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
@@ -112,7 +112,7 @@ void main() {
         const CustomTextField(
           keyboardType: TextInputType.text,
           label: 'Themed',
-          colors: ZeroTextFieldColors(primary: Colors.blue),
+          colors: ZeroUiColors(primary: Colors.blue),
         ),
       ),
     );

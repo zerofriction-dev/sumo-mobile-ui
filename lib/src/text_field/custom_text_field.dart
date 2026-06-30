@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'zero_text_field_colors.dart';
+import '../theme/zero_ui_colors.dart';
 
 /// A reusable, themeable text field with a floating label, an optional required
 /// marker, a built-in clear button, and an externally controlled error state.
 ///
-/// Colors default to [ZeroTextFieldColors] but can be fully overridden by
-/// passing a custom palette via [colors].
+/// Colors default to [ZeroUiColors] but can be fully overridden by passing a
+/// custom palette via [colors].
 class CustomTextField extends StatefulWidget {
   final TextEditingController? controller;
   final TextInputType keyboardType;
@@ -40,8 +40,8 @@ class CustomTextField extends StatefulWidget {
   final bool isRequired;
   final Function(bool isEmpty)? onEmptyChanged;
 
-  /// Color palette used by the field. Defaults to [ZeroTextFieldColors].
-  final ZeroTextFieldColors colors;
+  /// Color palette used by the field. Defaults to [ZeroUiColors].
+  final ZeroUiColors colors;
 
   const CustomTextField({
     super.key,
@@ -75,7 +75,7 @@ class CustomTextField extends StatefulWidget {
     this.showClearButton = true,
     this.isRequired = true,
     this.onEmptyChanged,
-    this.colors = const ZeroTextFieldColors(),
+    this.colors = const ZeroUiColors(),
   });
 
   @override
@@ -88,7 +88,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
   bool _hasText = false;
   bool _isFocused = false;
 
-  ZeroTextFieldColors get _colors => widget.colors;
+  ZeroUiColors get _colors => widget.colors;
 
   @override
   void initState() {

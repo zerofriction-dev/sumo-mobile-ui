@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Immutable color palette for [CustomTextField].
+/// Immutable color palette shared by all `zero_ui` widgets.
 ///
 /// The defaults reproduce the original Sumo app design. Override any color by
-/// constructing a custom instance and passing it via `CustomTextField(colors: ...)`,
-/// or derive one from an existing palette with [copyWith].
+/// constructing a custom instance and passing it via a widget's `colors:`
+/// parameter, or derive one from an existing palette with [copyWith].
 @immutable
-class ZeroTextFieldColors {
+class ZeroUiColors {
   /// Accent color: focused label, focused border, required `*` marker, cursor.
   final Color primary;
 
@@ -37,10 +37,13 @@ class ZeroTextFieldColors {
   /// Border color while the field is in an error state.
   final Color inputBorderError;
 
-  /// Color of the built-in clear (×) button.
+  /// Color of secondary icons (e.g. the text field's clear button).
   final Color iconSecondary;
 
-  const ZeroTextFieldColors({
+  /// Color of tertiary icons (e.g. the dropdown chevron while closed).
+  final Color iconTertiary;
+
+  const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
     this.textPrimary = const Color(0xFF28282B),
@@ -52,10 +55,11 @@ class ZeroTextFieldColors {
     this.inputBorderFocused = const Color(0xFFFC0000),
     this.inputBorderError = const Color(0xFFFC0000),
     this.iconSecondary = const Color(0xFF595959),
+    this.iconTertiary = const Color(0xFF818181),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
-  ZeroTextFieldColors copyWith({
+  ZeroUiColors copyWith({
     Color? primary,
     Color? error,
     Color? textPrimary,
@@ -67,8 +71,9 @@ class ZeroTextFieldColors {
     Color? inputBorderFocused,
     Color? inputBorderError,
     Color? iconSecondary,
+    Color? iconTertiary,
   }) {
-    return ZeroTextFieldColors(
+    return ZeroUiColors(
       primary: primary ?? this.primary,
       error: error ?? this.error,
       textPrimary: textPrimary ?? this.textPrimary,
@@ -80,6 +85,7 @@ class ZeroTextFieldColors {
       inputBorderFocused: inputBorderFocused ?? this.inputBorderFocused,
       inputBorderError: inputBorderError ?? this.inputBorderError,
       iconSecondary: iconSecondary ?? this.iconSecondary,
+      iconTertiary: iconTertiary ?? this.iconTertiary,
     );
   }
 }

@@ -1,10 +1,10 @@
-name: zero_textfield
+name: zero_ui
 description: >-
-  A reusable, themeable Flutter text field (CustomTextField) with a floating
-  label, optional required marker, built-in clear button, and external error state.
-version: 0.1.0
+  Reusable, themeable Flutter UI widgets (CustomTextField, DropdownSearch) with a
+  shared ZeroUiColors palette. Extracted from the Sumo apps.
+version: 0.2.0
 publish_to: "none" # private package — distributed via Git, not pub.dev
-homepage: https://github.com/zerofriction-dev/zero_textfield
+homepage: https://github.com/zerofriction-dev/zero_ui
 
 environment:
   sdk: ^3.9.0
@@ -13,6 +13,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_typeahead: ^5.2.0
+  flutter_tabler_icons: ^1.43.0
 
 dev_dependencies:
   flutter_test:
