@@ -4,7 +4,7 @@ description: >-
   label, optional required marker, built-in clear button, and external error state.
 version: 0.1.0
 publish_to: "none" # private package — distributed via Git, not pub.dev
-homepage: https://github.com/Teerapon-Thongkul/zero_textfield
+homepage: https://github.com/zerofriction-dev/zero_textfield
 
 environment:
   sdk: ^3.9.0

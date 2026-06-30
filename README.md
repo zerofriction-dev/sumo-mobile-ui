@@ -17,13 +17,13 @@ Add to your app's `pubspec.yaml`:
 dependencies:
   zero_textfield:
     git:
-      url: git@github.com:Teerapon-Thongkul/zero_textfield.git
+      url: git@github.com:zerofriction-dev/zero_textfield.git
       ref: v0.1.0   # pin to a tag (recommended)
 ```
 
 > Uses SSH — the machine that runs `flutter pub get` (including CI) needs an SSH
 > key with access to the repo. For HTTPS, use
-> `url: https://github.com/Teerapon-Thongkul/zero_textfield.git` instead.
+> `url: https://github.com/zerofriction-dev/zero_textfield.git` instead.
 
 Then:
 
