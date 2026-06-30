@@ -8,7 +8,7 @@ import '../theme/zero_ui_colors.dart';
 ///
 /// Colors default to [ZeroUiColors] but can be fully overridden by passing a
 /// custom palette via [colors].
-class CustomTextField extends StatefulWidget {
+class ZeroTextField extends StatefulWidget {
   final TextEditingController? controller;
   final TextInputType keyboardType;
   final Function(String?)? onSubmit;
@@ -43,7 +43,7 @@ class CustomTextField extends StatefulWidget {
   /// Color palette used by the field. Defaults to [ZeroUiColors].
   final ZeroUiColors colors;
 
-  const CustomTextField({
+  const ZeroTextField({
     super.key,
     this.controller,
     required this.keyboardType,
@@ -79,10 +79,10 @@ class CustomTextField extends StatefulWidget {
   });
 
   @override
-  State<CustomTextField> createState() => _CustomTextFieldState();
+  State<ZeroTextField> createState() => _ZeroTextFieldState();
 }
 
-class _CustomTextFieldState extends State<CustomTextField> {
+class _ZeroTextFieldState extends State<ZeroTextField> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
   bool _hasText = false;

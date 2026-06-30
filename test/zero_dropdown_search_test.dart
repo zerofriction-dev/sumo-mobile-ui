@@ -6,7 +6,7 @@ import 'package:zero_ui/zero_ui.dart';
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
-  DropdownSearch<String> build({
+  ZeroDropdownSearch<String> build({
     String? label,
     String? title,
     String? hint,
@@ -15,7 +15,7 @@ void main() {
     bool isRequired = true,
     ZeroUiColors colors = const ZeroUiColors(),
   }) {
-    return DropdownSearch<String>(
+    return ZeroDropdownSearch<String>(
       items: const ['Apple', 'Banana'],
       itemAsString: (s) => s,
       suggestionsCallback: (q) => const ['Apple', 'Banana'],
@@ -62,6 +62,6 @@ void main() {
     await tester.pumpWidget(
       wrap(build(label: 'Themed', colors: const ZeroUiColors(primary: Colors.blue))),
     );
-    expect(find.byType(DropdownSearch<String>), findsOneWidget);
+    expect(find.byType(ZeroDropdownSearch<String>), findsOneWidget);
   });
 }

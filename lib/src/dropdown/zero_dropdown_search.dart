@@ -18,7 +18,7 @@ T? _firstWhereOrNull<T>(Iterable<T> items, bool Function(T) test) {
 /// error state.
 ///
 /// Colors default to [ZeroUiColors] but can be fully overridden via [colors].
-class DropdownSearch<T> extends StatefulWidget {
+class ZeroDropdownSearch<T> extends StatefulWidget {
   final FutureOr<List<T>> Function(String) suggestionsCallback;
   final void Function(T?, String) onSuggestionSelected;
   final Widget Function(BuildContext, T) itemBuilder;
@@ -41,7 +41,7 @@ class DropdownSearch<T> extends StatefulWidget {
   /// Color palette used by the field. Defaults to [ZeroUiColors].
   final ZeroUiColors colors;
 
-  const DropdownSearch({
+  const ZeroDropdownSearch({
     super.key,
     required this.suggestionsCallback,
     required this.onSuggestionSelected,
@@ -65,10 +65,10 @@ class DropdownSearch<T> extends StatefulWidget {
   });
 
   @override
-  State<DropdownSearch<T>> createState() => _DropdownSearchState<T>();
+  State<ZeroDropdownSearch<T>> createState() => _ZeroDropdownSearchState<T>();
 }
 
-class _DropdownSearchState<T> extends State<DropdownSearch<T>> {
+class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   late final SuggestionsController<T> _suggestionsController;
@@ -153,7 +153,7 @@ class _DropdownSearchState<T> extends State<DropdownSearch<T>> {
   }
 
   @override
-  void didUpdateWidget(covariant DropdownSearch<T> oldWidget) {
+  void didUpdateWidget(covariant ZeroDropdownSearch<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     final hasInitialValueChanged =

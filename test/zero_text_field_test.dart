@@ -8,7 +8,7 @@ void main() {
   testWidgets('renders label and hint', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const CustomTextField(
+        const ZeroTextField(
           keyboardType: TextInputType.text,
           label: 'Name',
           hint: 'Enter your name',
@@ -24,7 +24,7 @@ void main() {
   testWidgets('shows required marker when title + isRequired', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const CustomTextField(
+        const ZeroTextField(
           keyboardType: TextInputType.text,
           title: 'Phone',
         ),
@@ -38,7 +38,7 @@ void main() {
   testWidgets('shows error text when hasError is true', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const CustomTextField(
+        const ZeroTextField(
           keyboardType: TextInputType.text,
           hasError: true,
           errorText: 'Required field',
@@ -52,7 +52,7 @@ void main() {
   testWidgets('hides error text when errorText is empty', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const CustomTextField(
+        const ZeroTextField(
           keyboardType: TextInputType.text,
           hasError: true,
           errorText: '',
@@ -60,7 +60,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(CustomTextField), findsOneWidget);
+    expect(find.byType(ZeroTextField), findsOneWidget);
     expect(find.byIcon(Icons.error), findsNothing);
   });
 
@@ -71,7 +71,7 @@ void main() {
 
     await tester.pumpWidget(
       wrap(
-        CustomTextField(
+        ZeroTextField(
           controller: controller,
           keyboardType: TextInputType.text,
         ),
@@ -94,7 +94,7 @@ void main() {
 
     await tester.pumpWidget(
       wrap(
-        CustomTextField(
+        ZeroTextField(
           controller: controller,
           keyboardType: TextInputType.text,
           readOnly: true,
@@ -109,7 +109,7 @@ void main() {
   testWidgets('accepts a custom color palette', (tester) async {
     await tester.pumpWidget(
       wrap(
-        const CustomTextField(
+        const ZeroTextField(
           keyboardType: TextInputType.text,
           label: 'Themed',
           colors: ZeroUiColors(primary: Colors.blue),
@@ -117,6 +117,6 @@ void main() {
       ),
     );
 
-    expect(find.byType(CustomTextField), findsOneWidget);
+    expect(find.byType(ZeroTextField), findsOneWidget);
   });
 }

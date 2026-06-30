@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+- **BREAKING — renamed widget classes** so they read as `zero_ui` types:
+  - `CustomTextField` → **`ZeroTextField`**
+  - `DropdownSearch<T>` → **`ZeroDropdownSearch<T>`**
+- Source files renamed to match (`zero_text_field.dart`, `zero_dropdown_search.dart`).
+- No behavior or API changes beyond the names; `ZeroUiColors` is unchanged.
+
+### Migration from 0.2.0
+
+- `CustomTextField(...)` → `ZeroTextField(...)`
+- `DropdownSearch<T>(...)` → `ZeroDropdownSearch<T>(...)`
+- Imports are unchanged (`package:zero_ui/zero_ui.dart`); bump the git `ref` to `v0.3.0`.
+
 ## 0.2.0
 
 - **Renamed the package `zero_textfield` → `zero_ui`** (umbrella for shared widgets).

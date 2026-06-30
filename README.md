@@ -4,9 +4,9 @@ Reusable, themeable Flutter UI widgets extracted from the Sumo apps. One package
 one import, one shared color palette.
 
 Widgets:
-- **`CustomTextField`** — text field with a floating label, optional required
+- **`ZeroTextField`** — text field with a floating label, optional required
   marker, built-in clear button, and an external error state.
-- **`DropdownSearch<T>`** — searchable dropdown (built on `flutter_typeahead`)
+- **`ZeroDropdownSearch<T>`** — searchable dropdown (built on `flutter_typeahead`)
   with the same label / required-marker / clear-button / error styling.
 
 Both default to the original Sumo look via **`ZeroUiColors`**; override any color
@@ -21,7 +21,7 @@ dependencies:
   zero_ui:
     git:
       url: git@github.com:zerofriction-dev/zero_ui.git
-      ref: v0.2.0   # pin to a tag (recommended)
+      ref: v0.3.0   # pin to a tag (recommended)
 ```
 
 > Uses SSH — the machine that runs `flutter pub get` (including CI) needs an SSH
@@ -32,10 +32,10 @@ Then `flutter pub get`.
 ## Usage
 
 ```dart
-import 'package:zero_ui/zero_ui.dart'; // CustomTextField, DropdownSearch, ZeroUiColors
+import 'package:zero_ui/zero_ui.dart'; // ZeroTextField, ZeroDropdownSearch, ZeroUiColors
 
 // Text field
-CustomTextField(
+ZeroTextField(
   keyboardType: TextInputType.text,
   title: 'Full name',
   controller: nameController,
@@ -44,7 +44,7 @@ CustomTextField(
 );
 
 // Searchable dropdown
-DropdownSearch<Province>(
+ZeroDropdownSearch<Province>(
   title: 'Province',
   items: provinces,
   itemAsString: (p) => p.nameTh,
@@ -59,8 +59,8 @@ DropdownSearch<Province>(
 ```dart
 const blue = ZeroUiColors(primary: Colors.blue, inputBorderFocused: Colors.blue);
 
-CustomTextField(keyboardType: TextInputType.text, colors: blue, ...);
-DropdownSearch<Province>(colors: blue, ...);   // same palette, every widget
+ZeroTextField(keyboardType: TextInputType.text, colors: blue, ...);
+ZeroDropdownSearch<Province>(colors: blue, ...);   // same palette, every widget
 ```
 
 `ZeroUiColors` exposes `copyWith` to derive from the defaults.
