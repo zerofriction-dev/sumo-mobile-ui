@@ -8,8 +8,10 @@ Widgets:
   marker, built-in clear button, and an external error state.
 - **`ZeroDropdownSearch<T>`** — searchable dropdown (built on `flutter_typeahead`)
   with the same label / required-marker / clear-button / error styling.
+- **`ZeroButton`** — primary action button with `enabled` / `isLoading` (spinner)
+  state, async `onPressed` + built-in double-submit guard, and `IconData` icons.
 
-Both default to the original Sumo look via **`ZeroUiColors`**; override any color
+All default to the original Sumo look via **`ZeroUiColors`**; override any color
 per widget with `colors:`.
 
 ## Install (Git dependency)

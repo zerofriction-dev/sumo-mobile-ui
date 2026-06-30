@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Added **`ZeroButton`** — primary action button unifying the three apps' button
+  variants: explicit `enabled` + `isLoading` (spinner) state, async `onPressed`
+  with a built-in in-flight guard (blocks double-submit), `IconData` prefix/suffix
+  icons, optional `child` / `countdown` / `padding`, `uppercase`, `spaceBetween`.
+- `ZeroUiColors` gains `textInverse`, `buttonDisabled`, `overlayDark` (button colors).
+
 ## 0.3.0
 
 - **BREAKING — renamed widget classes** so they read as `zero_ui` types:

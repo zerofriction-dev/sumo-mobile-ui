@@ -43,6 +43,15 @@ class ZeroUiColors {
   /// Color of tertiary icons (e.g. the dropdown chevron while closed).
   final Color iconTertiary;
 
+  /// Text/icon color on a filled primary button (e.g. white on red).
+  final Color textInverse;
+
+  /// Fill color of a disabled button.
+  final Color buttonDisabled;
+
+  /// Dark overlay used for a button's splash / highlight.
+  final Color overlayDark;
+
   const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
@@ -56,6 +65,9 @@ class ZeroUiColors {
     this.inputBorderError = const Color(0xFFFC0000),
     this.iconSecondary = const Color(0xFF595959),
     this.iconTertiary = const Color(0xFF818181),
+    this.textInverse = const Color(0xFFFFFFFF),
+    this.buttonDisabled = const Color(0xFFE0E0E0),
+    this.overlayDark = const Color(0x80000000),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
@@ -72,6 +84,9 @@ class ZeroUiColors {
     Color? inputBorderError,
     Color? iconSecondary,
     Color? iconTertiary,
+    Color? textInverse,
+    Color? buttonDisabled,
+    Color? overlayDark,
   }) {
     return ZeroUiColors(
       primary: primary ?? this.primary,
@@ -86,6 +101,9 @@ class ZeroUiColors {
       inputBorderError: inputBorderError ?? this.inputBorderError,
       iconSecondary: iconSecondary ?? this.iconSecondary,
       iconTertiary: iconTertiary ?? this.iconTertiary,
+      textInverse: textInverse ?? this.textInverse,
+      buttonDisabled: buttonDisabled ?? this.buttonDisabled,
+      overlayDark: overlayDark ?? this.overlayDark,
     );
   }
 }
