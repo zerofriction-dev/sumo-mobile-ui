@@ -247,7 +247,7 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
                     fontWeight: FontWeight.w400,
                     color: widget.hintColor ?? _colors.textPlaceholder,
                   ),
-                  prefixIcon: widget.prefixIcon,
+                  prefixIcon: _buildPrefixIcon(),
                   suffixIcon: _buildSuffixIcon(),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 18,
@@ -320,6 +320,20 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget? _buildPrefixIcon() {
+    final icon = widget.prefixIcon;
+    if (icon == null) return null;
+
+    final lines = widget.maxLines ?? 1;
+    if (lines <= 1) return icon;
+
+    final lift = (lines - 1) * widget.textSize * 0.75 + 4;
+    return Transform.translate(
+      offset: Offset(0, -lift),
+      child: icon,
     );
   }
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1
+
+- **`ZeroTextField`** — align the `prefixIcon` with the first text line on
+  multiline fields (`maxLines > 1`). Previously `InputDecoration` centered the
+  icon vertically, so on a tall field it floated to the middle while the
+  label/hint sat on the first line. The icon is now lifted onto the hint line
+  with a `Transform.translate` of `(maxLines - 1) * textSize * 0.75 + 4` (the
+  `+4` is a small optical nudge so it reads as aligned) — a paint-only shift, so
+  the icon keeps the exact same horizontal inset, hint/text gap, and field height
+  as a single-line field (only its vertical position changes). Single-line fields
+  are unchanged.
+
 ## 0.4.0
 
 - Added **`ZeroButton`** — primary action button unifying the three apps' button
