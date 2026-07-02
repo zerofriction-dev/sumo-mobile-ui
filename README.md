@@ -10,6 +10,9 @@ Widgets:
   with the same label / required-marker / clear-button / error styling.
 - **`ZeroButton`** — primary action button with `enabled` / `isLoading` (spinner)
   state, async `onPressed` + built-in double-submit guard, and `IconData` icons.
+- **`ZeroCheckbox`** — controlled checkbox (`value` + `onChanged`) with a plain
+  `label` or a custom `labelWidget` (links keep their gestures), `enabled` /
+  `hasError` states, and an animated check.
 
 All default to the original Sumo look via **`ZeroUiColors`**; override any color
 per widget with `colors:`.

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.0
+
+- Added **`ZeroCheckbox`** — a controlled, themeable checkbox (`value` + `onChanged`)
+  with an optional plain-text `label` or a custom `labelWidget` (for labels with
+  inline links — only the box toggles in that case, so the widget keeps its own
+  gestures). Supports `enabled`/disabled and `hasError` states, animated
+  check-in/out, size/radius/gap/alignment/padding layout knobs, and per-instance
+  `activeColor` / `checkColor` / `borderColor` overrides on top of the shared
+  `ZeroUiColors` palette. No new palette fields — reuses `primary`, `textInverse`,
+  `iconTertiary`, `inputBorderError`, `buttonDisabled`, `textDisabled`, `textPrimary`.
+  - The check mark is drawn with a `CustomPainter` (rounded strokes), so it does
+    not depend on the Material icon font and renders identically whatever the host
+    app's `uses-material-design` setting.
+  - The checked box casts a soft shadow by default (`0px 2px 6px` at 30% of the
+    checked fill, matching the design); override or disable it with `checkedShadow`
+    (pass `const []` for no shadow).
+
 ## 0.4.2
 
 - **`ZeroButton`** — fix content color while `isLoading`. The background uses
