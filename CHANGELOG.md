@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+- Added **`ZeroCheckbox`** — a controlled, themeable checkbox (`value` + `onChanged`)
+  with an optional plain-text `label` or a custom `labelWidget` (for labels with
+  inline links — only the box toggles in that case, so the widget keeps its own
+  gestures). Supports `enabled`/disabled and `hasError` states, animated
+  check-in/out, size/radius/gap/alignment/padding layout knobs, and per-instance
+  `activeColor` / `checkColor` / `borderColor` overrides on top of the shared
+  `ZeroUiColors` palette. No new palette fields — reuses `primary`, `textInverse`,
+  `iconTertiary`, `inputBorderError`, `buttonDisabled`, `textDisabled`, `textPrimary`.
+
 ## 0.4.2
 
 - **`ZeroButton`** — fix content color while `isLoading`. The background uses
