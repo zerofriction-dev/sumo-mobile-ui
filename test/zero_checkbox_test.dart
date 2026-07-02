@@ -5,6 +5,10 @@ import 'package:zero_ui/zero_ui.dart';
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
+  BoxDecoration boxDeco(WidgetTester tester) =>
+      tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).decoration
+          as BoxDecoration;
+
   testWidgets('renders the label', (tester) async {
     await tester.pumpWidget(wrap(
       ZeroCheckbox(value: false, onChanged: (_) {}, label: 'Accept'),
@@ -12,11 +16,21 @@ void main() {
     expect(find.text('Accept'), findsOneWidget);
   });
 
-  testWidgets('shows the check mark only when checked', (tester) async {
+  testWidgets('checked box is filled with the active color; unchecked is '
+      'transparent', (tester) async {
     await tester.pumpWidget(wrap(
-      ZeroCheckbox(value: true, onChanged: (_) {}),
+      ZeroCheckbox(
+        value: true,
+        onChanged: (_) {},
+        activeColor: const Color(0xFFFF2121),
+      ),
     ));
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(boxDeco(tester).color, const Color(0xFFFF2121));
+
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(value: false, onChanged: (_) {}),
+    ));
+    expect(boxDeco(tester).color, Colors.transparent);
   });
 
   testWidgets('reports the toggled value on tap (box)', (tester) async {
@@ -40,7 +54,6 @@ void main() {
   });
 
   testWidgets('does NOT toggle when onChanged is null', (tester) async {
-    // Just verify it renders and taps are harmless (no callback to assert).
     await tester.pumpWidget(wrap(
       const ZeroCheckbox(value: false, onChanged: null, label: 'Disabled'),
     ));
@@ -82,6 +95,25 @@ void main() {
     await tester.pump();
     expect(linkTaps, 1);
     expect(boxToggles, 0); // tapping the custom label must not toggle the box
+  });
+
+  testWidgets('checked box has a shadow; unchecked does not', (tester) async {
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(value: true, onChanged: (_) {}),
+    ));
+    expect(boxDeco(tester).boxShadow, isNotEmpty);
+
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(value: false, onChanged: (_) {}),
+    ));
+    expect(boxDeco(tester).boxShadow ?? const <BoxShadow>[], isEmpty);
+  });
+
+  testWidgets('checkedShadow: [] disables the shadow', (tester) async {
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(value: true, onChanged: (_) {}, checkedShadow: const []),
+    ));
+    expect(boxDeco(tester).boxShadow ?? const <BoxShadow>[], isEmpty);
   });
 
   testWidgets('accepts a custom color palette', (tester) async {

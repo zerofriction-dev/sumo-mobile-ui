@@ -13,6 +13,10 @@ import '../theme/zero_ui_colors.dart';
 /// rich label containing tappable links — only the box toggles, so the widget
 /// keeps its own gestures.
 ///
+/// The check mark is drawn with a [CustomPainter] (not an icon font), so it
+/// renders identically regardless of the host app's `uses-material-design`
+/// setting.
+///
 /// Colors default to [ZeroUiColors] but can be overridden wholesale via [colors]
 /// or per instance via [activeColor] / [checkColor] / [borderColor].
 ///
@@ -73,6 +77,11 @@ class ZeroCheckbox extends StatelessWidget {
   /// [ZeroUiColors.iconTertiary].
   final Color? borderColor;
 
+  /// Shadow cast by the box while checked. Defaults to a soft glow derived from
+  /// the checked fill (`0px 2px 6px` at 30% opacity, matching the design). Pass
+  /// an empty list to render no shadow.
+  final List<BoxShadow>? checkedShadow;
+
   /// Color palette used by the checkbox. Defaults to [ZeroUiColors].
   final ZeroUiColors colors;
 
@@ -92,6 +101,7 @@ class ZeroCheckbox extends StatelessWidget {
     this.activeColor,
     this.checkColor,
     this.borderColor,
+    this.checkedShadow,
     this.colors = const ZeroUiColors(),
   });
 
@@ -108,16 +118,26 @@ class ZeroCheckbox extends StatelessWidget {
       );
 
   Widget _buildBox() {
+    final activeFill = activeColor ?? colors.primary;
     final Color fill;
     final Color border;
     final Color mark = checkColor ?? colors.textInverse;
+    List<BoxShadow>? shadow;
 
     if (!_isEnabled) {
       fill = value ? colors.buttonDisabled : Colors.transparent;
       border = colors.buttonDisabled;
     } else if (value) {
-      fill = activeColor ?? colors.primary;
-      border = activeColor ?? colors.primary;
+      fill = activeFill;
+      border = activeFill;
+      shadow = checkedShadow ??
+          [
+            BoxShadow(
+              color: activeFill.withValues(alpha: 0.3),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ];
     } else {
       fill = Colors.transparent;
       border = hasError
@@ -134,15 +154,18 @@ class ZeroCheckbox extends StatelessWidget {
         color: fill,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: border, width: 2),
+        boxShadow: shadow,
       ),
       alignment: Alignment.center,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 120),
         opacity: value ? 1 : 0,
-        child: Icon(
-          Icons.check_rounded,
-          size: size * 0.72,
-          color: !_isEnabled ? colors.textDisabled : mark,
+        child: CustomPaint(
+          size: Size.square(size),
+          painter: _ZeroCheckPainter(
+            color: _isEnabled ? mark : colors.textDisabled,
+            strokeWidth: size * 0.12,
+          ),
         ),
       ),
     );
@@ -198,4 +221,33 @@ class ZeroCheckbox extends StatelessWidget {
     }
     return result;
   }
+}
+
+/// Paints a check mark (two rounded strokes) scaled to fit the given canvas.
+class _ZeroCheckPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  const _ZeroCheckPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final path = Path()
+      ..moveTo(w * 0.26, h * 0.52)
+      ..lineTo(w * 0.43, h * 0.68)
+      ..lineTo(w * 0.74, h * 0.34);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ZeroCheckPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
 }
