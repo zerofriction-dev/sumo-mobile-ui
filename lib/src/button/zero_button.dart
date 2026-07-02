@@ -110,9 +110,11 @@ class _ZeroButtonState extends State<ZeroButton> {
   Widget build(BuildContext context) {
     final shape = BorderRadius.circular(widget.borderRadius);
     final resolvedTextColor = widget.textColor ?? _colors.textInverse;
-    final contentColor =
-        _isActive ? resolvedTextColor : _colors.textPrimary;
     final active = _isActive || widget.isLoading;
+    // Text/icon use the active foreground whenever the background is the active
+    // color — including while loading — so content stays legible (e.g. white on
+    // the primary fill) instead of falling back to the dark disabled color.
+    final contentColor = active ? resolvedTextColor : _colors.textPrimary;
 
     return Container(
       width: widget.width,
@@ -148,9 +150,7 @@ class _ZeroButtonState extends State<ZeroButton> {
                     height: widget.fontSize,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        widget.enabled ? resolvedTextColor : _colors.textPrimary,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(contentColor),
                     ),
                   ),
                   const SizedBox(width: 10),

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.2
+
+- **`ZeroButton`** — fix content color while `isLoading`. The background uses
+  `active` (`_isActive || isLoading`) but the label/icon/spinner color used
+  `_isActive`, which is `false` during loading — so a loading button rendered
+  dark (disabled) text on the active (e.g. primary red) fill. Content now
+  derives from `active`, so text/icon/spinner stay on the active foreground
+  (e.g. white) while loading. Enabled and disabled states are unchanged.
+
 ## 0.4.1
 
 - **`ZeroTextField`** — align the `prefixIcon` with the first text line on
