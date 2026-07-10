@@ -198,7 +198,16 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
               ),
             ),
           GestureDetector(
-            onTap: widget.readOnly ? widget.onTap : null,
+            onTap: widget.readOnly
+                ? () {
+                    // Clear focus from the previously-focused field so that
+                    // when a dialog opened by onTap (e.g. a date picker) is
+                    // dismissed, focus is not restored to that earlier field
+                    // (which would pop its keyboard back up).
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    widget.onTap?.call();
+                  }
+                : null,
             child: AbsorbPointer(
               absorbing: widget.readOnly,
               child: TextFormField(
