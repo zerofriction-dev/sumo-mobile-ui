@@ -96,7 +96,11 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
     _controller = widget.controller ?? TextEditingController();
     _hasText = _controller.text.isNotEmpty;
     _controller.addListener(_handleTextChanged);
-    _focusNode = FocusNode(canRequestFocus: !widget.readOnly);
+    // readOnly fields stay focusable (so a tap can move focus onto them and
+    // away from a previously focused field) but are skipped by traversal.
+    // A readOnly EditableText never opens an IME connection, so holding
+    // focus on it can't summon the keyboard.
+    _focusNode = FocusNode(skipTraversal: widget.readOnly);
     _focusNode.addListener(_handleFocusChanged);
   }
 
@@ -200,11 +204,17 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
           GestureDetector(
             onTap: widget.readOnly
                 ? () {
-                    // Clear focus from the previously-focused field so that
-                    // when a dialog opened by onTap (e.g. a date picker) is
-                    // dismissed, focus is not restored to that earlier field
-                    // (which would pop its keyboard back up).
+                    // Move focus onto this readOnly field before opening any
+                    // dialog from onTap (e.g. a date picker): the previous
+                    // field's keyboard closes, and when the dialog is
+                    // dismissed the framework restores focus HERE (harmless —
+                    // readOnly fields open no IME connection) instead of
+                    // returning it to the previously focused field and
+                    // popping its keyboard back up. unfocus() first clears
+                    // the scope's focus history so this field is the only
+                    // restore candidate.
                     FocusManager.instance.primaryFocus?.unfocus();
+                    _focusNode.requestFocus();
                     widget.onTap?.call();
                   }
                 : null,
