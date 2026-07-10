@@ -263,7 +263,7 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
                       color: widget.readOnly
                           ? _colors.inputBorder
                           : _colors.inputBorderFocused,
-                      width: 2.0,
+                      width: widget.readOnly ? 1.5 : 2.0,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
