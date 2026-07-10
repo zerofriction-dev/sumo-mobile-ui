@@ -338,7 +338,12 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
   }
 
   Widget? _buildSuffixIcon() {
-    if (widget.suffixIcon != null) return widget.suffixIcon;
+    if (widget.suffixIcon != null) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 16),
+        child: widget.suffixIcon,
+      );
+    }
 
     if (widget.showClearButton && _hasText && !widget.readOnly) {
       return Padding(
