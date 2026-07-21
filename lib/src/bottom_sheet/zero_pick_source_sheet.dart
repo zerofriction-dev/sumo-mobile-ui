@@ -173,9 +173,10 @@ class ZeroPickSourceSheet extends StatelessWidget {
               ),
             ),
             if (cancelText.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               _Group(
                 colors: colors,
+                borderColor: colors.primary,
                 children: [
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -188,7 +189,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: colors.textSecondary,
+                            color: colors.primary,
                           ),
                         ),
                       ),
@@ -205,17 +206,29 @@ class ZeroPickSourceSheet extends StatelessWidget {
 }
 
 class _Group extends StatelessWidget {
-  const _Group({required this.children, required this.colors});
+  const _Group({
+    required this.children,
+    required this.colors,
+    this.borderColor,
+  });
 
   final List<Widget> children;
   final ZeroUiColors colors;
 
+  /// Defaults to the resting input border. The cancel group passes [primary] so
+  /// it reads as an action rather than more list.
+  final Color? borderColor;
+
   @override
   Widget build(BuildContext context) {
+    final Color border = borderColor ?? colors.inputBorder;
     return Material(
-      color: colors.backgroundFilled,
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.white,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: border, width: borderColor == null ? 1 : 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
@@ -263,10 +276,10 @@ class _OptionRow extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.1),
+                color: accent,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(option.icon, size: 22, color: accent),
+              child: Icon(option.icon, size: 22, color: colors.textInverse),
             ),
             const SizedBox(width: 12),
             Expanded(

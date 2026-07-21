@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0
+
+- **`ZeroPickSourceSheet` visual pass** — the 0.7.0 list read washed out: a grey
+  group with 10%-tinted icon tiles on top of it left everything grey-on-grey,
+  and the cancel row was another grey block sitting right under the list.
+  - Groups are now **white with a hairline border** instead of a flat grey fill,
+    so the rows read as a card rather than fog.
+  - Icon tiles are **solid `primary` with a white glyph** instead of a 10% tint —
+    the tint had almost no contrast against the grey it sat on.
+  - The cancel group takes a **`primary` border and `primary` label**, matching
+    the app's outlined-button style, and sits **24px** below the list instead of
+    12px — at 12 it crowded the group above.
+  - No API change; palette additions: none (uses `textInverse` for the glyph).
+
 ## 0.7.0
 
 - **`ZeroPickSourceSheet` redesigned as a grouped row list** (breaking for the
