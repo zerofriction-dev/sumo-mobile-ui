@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.6.0
+
+- Added **`ZeroPickSourceSheet`** — the shared "where should this come from?"
+  bottom-sheet body: camera / gallery / file, one tappable card each in a single
+  row. Extracted from the Sumo customer app, which had grown five near-identical
+  copies of it (two shared widgets plus three written inline, some hardcoding
+  their own colours).
+  - Routing-agnostic on purpose: it is a plain widget that pops its own route
+    with `Navigator.pop` *before* running the option's callback, so it works
+    under `showModalBottomSheet`, GetX's `Get.bottomSheet`, or any other host —
+    and callers never close the sheet themselves. `zero_ui` therefore stays free
+    of a routing dependency.
+  - `showZeroPickSourceSheet(context, ...)` presents it with
+    `showModalBottomSheet`, already shaped and coloured to match the library.
+  - `ZeroPickSourceOption.camera` / `.gallery` / `.file` shorthands carry the
+    icon and a default Thai label; pass `label:` to override per instance.
+  - `destructiveText` + `onDestructive` render a red action under the cards for
+    "remove the photo I already picked" — not a source, so deliberately not a
+    card in the row.
+  - `title`, `subtitle` (hide with null) and `cancelText` are overridable. No new
+    palette fields — reuses `primary`, `error`, `textPrimary`, `textSecondary`,
+    `inputBorder` and `backgroundFilled`.
+  - Options are laid out in one `Row`, so two or three read comfortably; the
+    constructor asserts a non-empty list, and beyond three the cards get too
+    narrow to label.
+
 ## 0.5.0
 
 - Added **`ZeroCheckbox`** — a controlled, themeable checkbox (`value` + `onChanged`)
