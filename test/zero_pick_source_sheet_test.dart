@@ -10,9 +10,8 @@ void main() {
     WidgetTester tester, {
     required List<ZeroPickSourceOption> options,
     String title = 'อัปโหลดรูปภาพ',
-    String? subtitle = 'เลือกวิธีเพิ่มรูป',
-    String? destructiveText,
-    VoidCallback? onDestructive,
+    String? subtitle,
+    String cancelText = 'ยกเลิก',
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -25,8 +24,7 @@ void main() {
                   options: options,
                   title: title,
                   subtitle: subtitle,
-                  destructiveText: destructiveText,
-                  onDestructive: onDestructive,
+                  cancelText: cancelText,
                 ),
                 child: const Text('open'),
               ),
@@ -39,8 +37,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('renders the title, subtitle and one card per option',
-      (tester) async {
+  testWidgets('renders the title and one row per option', (tester) async {
     await pumpSheet(
       tester,
       options: [
@@ -50,35 +47,37 @@ void main() {
     );
 
     expect(find.text('อัปโหลดรูปภาพ'), findsOneWidget);
-    expect(find.text('เลือกวิธีเพิ่มรูป'), findsOneWidget);
     expect(find.text('ถ่ายภาพ'), findsOneWidget);
-    expect(find.text('คลังภาพ'), findsOneWidget);
+    expect(find.text('เลือกจากคลังภาพ'), findsOneWidget);
     expect(find.text('ยกเลิก'), findsOneWidget);
   });
 
-  testWidgets('hides the subtitle when it is null', (tester) async {
+  testWidgets('subtitle is hidden unless supplied', (tester) async {
     await pumpSheet(
       tester,
       options: [ZeroPickSourceOption.camera(() {})],
-      subtitle: null,
     );
-
     expect(find.text('เลือกวิธีเพิ่มรูป'), findsNothing);
+
+    await tester.tap(find.text('ยกเลิก'));
+    await tester.pumpAndSettle();
+
+    await pumpSheet(
+      tester,
+      options: [ZeroPickSourceOption.camera(() {})],
+      subtitle: 'เลือกวิธีเพิ่มรูป',
+    );
+    expect(find.text('เลือกวิธีเพิ่มรูป'), findsOneWidget);
   });
 
-  testWidgets('tapping a card closes the sheet before running its callback',
+  testWidgets('tapping a row closes the sheet before running its callback',
       (tester) async {
     bool ran = false;
-    bool sheetGoneWhenCallbackRan = false;
 
     await pumpSheet(
       tester,
       options: [
-        ZeroPickSourceOption.camera(() {
-          ran = true;
-          // The pop is issued before this runs, so the sheet is on its way out.
-          sheetGoneWhenCallbackRan = true;
-        }),
+        ZeroPickSourceOption.camera(() => ran = true),
         ZeroPickSourceOption.gallery(() {}),
       ],
     );
@@ -87,7 +86,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(ran, isTrue);
-    expect(sheetGoneWhenCallbackRan, isTrue);
     expect(find.text('อัปโหลดรูปภาพ'), findsNothing);
   });
 
@@ -106,26 +104,34 @@ void main() {
     expect(find.text('อัปโหลดรูปภาพ'), findsNothing);
   });
 
-  testWidgets('the destructive action only appears when both parts are given',
+  testWidgets('an empty cancelText drops the cancel group', (tester) async {
+    await pumpSheet(
+      tester,
+      options: [ZeroPickSourceOption.camera(() {})],
+      cancelText: '',
+    );
+
+    expect(find.text('ยกเลิก'), findsNothing);
+    expect(find.text('ถ่ายภาพ'), findsOneWidget);
+  });
+
+  testWidgets('a destructive option renders in the error colour and runs',
       (tester) async {
-    await pumpSheet(
-      tester,
-      options: [ZeroPickSourceOption.camera(() {})],
-      destructiveText: 'ลบรูปที่เลือก',
-    );
-    expect(find.text('ลบรูปที่เลือก'), findsNothing);
-
-    await tester.tap(find.text('ยกเลิก'));
-    await tester.pumpAndSettle();
-
     bool removed = false;
+
     await pumpSheet(
       tester,
-      options: [ZeroPickSourceOption.camera(() {})],
-      destructiveText: 'ลบรูปที่เลือก',
-      onDestructive: () => removed = true,
+      options: [
+        ZeroPickSourceOption.camera(() {}),
+        ZeroPickSourceOption.remove(() => removed = true),
+      ],
     );
-    expect(find.text('ลบรูปที่เลือก'), findsOneWidget);
+
+    const ZeroUiColors palette = ZeroUiColors();
+    final Text removeLabel = tester.widget<Text>(find.text('ลบรูปที่เลือก'));
+    final Text cameraLabel = tester.widget<Text>(find.text('ถ่ายภาพ'));
+    expect(removeLabel.style?.color, palette.error);
+    expect(cameraLabel.style?.color, palette.textPrimary);
 
     await tester.tap(find.text('ลบรูปที่เลือก'));
     await tester.pumpAndSettle();
@@ -148,7 +154,37 @@ void main() {
     expect(find.text('ถ่ายภาพ'), findsNothing);
   });
 
-  testWidgets('three options still lay out in one row', (tester) async {
+  testWidgets('options stack vertically in the given order', (tester) async {
+    await pumpSheet(
+      tester,
+      options: [
+        ZeroPickSourceOption.camera(() {}),
+        ZeroPickSourceOption.gallery(() {}),
+        ZeroPickSourceOption.file(() {}),
+        ZeroPickSourceOption.remove(() {}),
+      ],
+    );
+
+    final double camera = tester.getRect(find.text('ถ่ายภาพ')).center.dy;
+    final double gallery =
+        tester.getRect(find.text('เลือกจากคลังภาพ')).center.dy;
+    final double file = tester.getRect(find.text('เลือกไฟล์')).center.dy;
+    final double remove = tester.getRect(find.text('ลบรูปที่เลือก')).center.dy;
+
+    expect(camera, lessThan(gallery));
+    expect(gallery, lessThan(file));
+    expect(file, lessThan(remove));
+
+    // A row layout would have put them side by side; a fourth option is only
+    // free because they stack.
+    expect(
+      tester.getRect(find.text('ถ่ายภาพ')).center.dx,
+      closeTo(tester.getRect(find.text('เลือกไฟล์')).center.dx, 0.5),
+    );
+  });
+
+  testWidgets('separators sit between rows, never above the first',
+      (tester) async {
     await pumpSheet(
       tester,
       options: [
@@ -158,13 +194,7 @@ void main() {
       ],
     );
 
-    final Rect camera = tester.getRect(find.text('ถ่ายภาพ'));
-    final Rect gallery = tester.getRect(find.text('คลังภาพ'));
-    final Rect file = tester.getRect(find.text('เลือกไฟล์'));
-
-    expect(camera.center.dy, closeTo(gallery.center.dy, 0.5));
-    expect(gallery.center.dy, closeTo(file.center.dy, 0.5));
-    expect(camera.center.dx, lessThan(gallery.center.dx));
-    expect(gallery.center.dx, lessThan(file.center.dx));
+    // Three option rows -> two separators; the cancel group has none.
+    expect(find.byType(Divider), findsNWidgets(2));
   });
 }

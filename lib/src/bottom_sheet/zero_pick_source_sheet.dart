@@ -3,7 +3,7 @@ import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../theme/zero_ui_colors.dart';
 
-/// One card in a [ZeroPickSourceSheet].
+/// One row in a [ZeroPickSourceSheet].
 ///
 /// Build these with the [ZeroPickSourceOption.camera],
 /// [ZeroPickSourceOption.gallery] and [ZeroPickSourceOption.file] shorthands
@@ -14,16 +14,22 @@ class ZeroPickSourceOption {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isDestructive = false,
   });
 
-  /// Icon drawn inside the tinted circle.
+  /// Icon drawn inside the tinted rounded square.
   final IconData icon;
 
-  /// Caption under the icon. Kept to one line — long labels are ellipsised.
+  /// Row caption. Long labels are ellipsised on one line.
   final String label;
 
   /// Runs after the sheet has closed itself.
   final VoidCallback onTap;
+
+  /// Renders the row in the error colour — for "remove the photo I already
+  /// picked" and friends. Keeps the row in the same group so it still reads as
+  /// one list of things you can do.
+  final bool isDestructive;
 
   factory ZeroPickSourceOption.camera(
     VoidCallback onTap, {
@@ -37,7 +43,7 @@ class ZeroPickSourceOption {
 
   factory ZeroPickSourceOption.gallery(
     VoidCallback onTap, {
-    String label = 'คลังภาพ',
+    String label = 'เลือกจากคลังภาพ',
   }) =>
       ZeroPickSourceOption(
         icon: TablerIcons.photo,
@@ -54,22 +60,30 @@ class ZeroPickSourceOption {
         label: label,
         onTap: onTap,
       );
+
+  factory ZeroPickSourceOption.remove(
+    VoidCallback onTap, {
+    String label = 'ลบรูปที่เลือก',
+  }) =>
+      ZeroPickSourceOption(
+        icon: TablerIcons.trash,
+        label: label,
+        onTap: onTap,
+        isDestructive: true,
+      );
 }
 
-/// The "where should this come from?" bottom-sheet body — camera / gallery /
-/// file, one card each.
+/// The "where should this come from?" bottom-sheet body — one grouped list of
+/// sources, with the cancel action in a group of its own.
 ///
 /// This is a plain widget with no routing opinions: hand it to
 /// [showZeroPickSourceSheet], to `showModalBottomSheet`, or to any other sheet
-/// host (GetX's `Get.bottomSheet` included). Tapping a card pops the enclosing
+/// host (GetX's `Get.bottomSheet` included). Tapping a row pops the enclosing
 /// route with [Navigator.pop] and *then* runs the option's callback, so callers
 /// never have to close the sheet themselves.
 ///
-/// Options are laid out in a single [Row], so two or three read comfortably;
-/// beyond that the cards get too narrow to label.
-///
-/// [destructiveText] adds a red action under the cards — for "remove the photo
-/// I already picked", which is not a source and so does not belong in the row.
+/// Rows stack vertically, so any number of options fits — unlike a row of
+/// cards, adding a fourth source costs nothing.
 ///
 /// ```dart
 /// showZeroPickSourceSheet(
@@ -77,6 +91,7 @@ class ZeroPickSourceOption {
 ///   options: [
 ///     ZeroPickSourceOption.camera(vm.takePhoto),
 ///     ZeroPickSourceOption.gallery(vm.pickImage),
+///     if (vm.hasPhoto) ZeroPickSourceOption.remove(vm.clearPhoto),
 ///   ],
 /// );
 /// ```
@@ -85,10 +100,8 @@ class ZeroPickSourceSheet extends StatelessWidget {
     super.key,
     required this.options,
     this.title = 'อัปโหลดรูปภาพ',
-    this.subtitle = 'เลือกวิธีเพิ่มรูป',
+    this.subtitle,
     this.cancelText = 'ยกเลิก',
-    this.destructiveText,
-    this.onDestructive,
     this.colors = const ZeroUiColors(),
   }) : assert(options.length > 0, 'ต้องมีอย่างน้อย 1 ตัวเลือก');
 
@@ -97,23 +110,18 @@ class ZeroPickSourceSheet extends StatelessWidget {
 
   /// Hidden when null or empty.
   final String? subtitle;
-  final String cancelText;
 
-  /// Hidden unless both this and [onDestructive] are supplied.
-  final String? destructiveText;
-  final VoidCallback? onDestructive;
+  /// Hide the cancel group entirely by passing an empty string.
+  final String cancelText;
 
   final ZeroUiColors colors;
 
   @override
   Widget build(BuildContext context) {
-    final bool showDestructive =
-        destructiveText != null && onDestructive != null;
-
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,44 +156,47 @@ class ZeroPickSourceSheet extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                for (int i = 0; i < options.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 12),
-                  Expanded(
-                    child: _OptionCard(option: options[i], colors: colors),
+            const SizedBox(height: 16),
+            // Scrolls rather than overflows once the option list outgrows the
+            // sheet — the cancel group stays pinned below it either way.
+            Flexible(
+              child: SingleChildScrollView(
+                child: _Group(
+                  colors: colors,
+                  children: [
+                    for (int i = 0; i < options.length; i++) ...[
+                      if (i > 0) _Divider(colors: colors),
+                      _OptionRow(option: options[i], colors: colors),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            if (cancelText.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _Group(
+                colors: colors,
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text(
+                          cancelText,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              ],
-            ),
-            if (showDestructive)
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  onDestructive!();
-                },
-                child: Text(
-                  destructiveText!,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: colors.error,
-                  ),
-                ),
               ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                cancelText,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textSecondary,
-                ),
-              ),
-            ),
+            ],
           ],
         ),
       ),
@@ -193,10 +204,10 @@ class ZeroPickSourceSheet extends StatelessWidget {
   }
 }
 
-class _OptionCard extends StatelessWidget {
-  const _OptionCard({required this.option, required this.colors});
+class _Group extends StatelessWidget {
+  const _Group({required this.children, required this.colors});
 
-  final ZeroPickSourceOption option;
+  final List<Widget> children;
   final ZeroUiColors colors;
 
   @override
@@ -204,40 +215,78 @@ class _OptionCard extends StatelessWidget {
     return Material(
       color: colors.backgroundFilled,
       borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.of(context).pop();
-          option.onTap();
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(option.icon, size: 24, color: colors.primary),
+      clipBehavior: Clip.antiAlias,
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
+}
+
+class _Divider extends StatelessWidget {
+  const _Divider({required this.colors});
+
+  final ZeroUiColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    // Indented past the icon so the rows read as one list, the way a grouped
+    // list does on iOS.
+    return Padding(
+      padding: const EdgeInsets.only(left: 64),
+      child: Divider(height: 1, thickness: 1, color: colors.inputBorder),
+    );
+  }
+}
+
+class _OptionRow extends StatelessWidget {
+  const _OptionRow({required this.option, required this.colors});
+
+  final ZeroPickSourceOption option;
+  final ZeroUiColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color accent =
+        option.isDestructive ? colors.error : colors.primary;
+    final Color labelColor =
+        option.isDestructive ? colors.error : colors.textPrimary;
+
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).pop();
+        option.onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 10),
-              Text(
+              child: Icon(option.icon, size: 22, color: accent),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
                 option.label,
-                textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
+                  color: labelColor,
                 ),
               ),
-            ],
-          ),
+            ),
+            Icon(
+              TablerIcons.chevron_right,
+              size: 18,
+              color: colors.iconTertiary,
+            ),
+          ],
         ),
       ),
     );
@@ -253,14 +302,13 @@ Future<T?> showZeroPickSourceSheet<T>(
   BuildContext context, {
   required List<ZeroPickSourceOption> options,
   String title = 'อัปโหลดรูปภาพ',
-  String? subtitle = 'เลือกวิธีเพิ่มรูป',
+  String? subtitle,
   String cancelText = 'ยกเลิก',
-  String? destructiveText,
-  VoidCallback? onDestructive,
   ZeroUiColors colors = const ZeroUiColors(),
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: Colors.white,
     barrierColor: Colors.black.withValues(alpha: 0.5),
     shape: const RoundedRectangleBorder(
@@ -271,8 +319,6 @@ Future<T?> showZeroPickSourceSheet<T>(
       title: title,
       subtitle: subtitle,
       cancelText: cancelText,
-      destructiveText: destructiveText,
-      onDestructive: onDestructive,
       colors: colors,
     ),
   );

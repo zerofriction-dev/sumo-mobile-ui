@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.7.0
+
+- **`ZeroPickSourceSheet` redesigned as a grouped row list** (breaking for the
+  0.6.0 API). The two-card row read as unfinished next to app UI that uses
+  chunky illustrated icons: thin line icons floating in pale circles, inside
+  large empty grey cards.
+  - Sources are now rows in one rounded group — 40px tinted icon tile, label,
+    chevron — with hairline separators indented past the icon, and **cancel in a
+    separate group below**, the way a grouped iOS action list reads.
+  - Rows stack, so **any number of options fits**. The row of cards capped out
+    at three before the labels stopped fitting.
+  - **`destructiveText` / `onDestructive` are gone.** A destructive action is
+    now just another option: `ZeroPickSourceOption.remove(...)` (or any option
+    with `isDestructive: true`), which renders in `error` and sits in the same
+    group, so it reads as one list of things you can do.
+  - `subtitle` now defaults to `null` instead of a canned string — it was
+    restating the title at most call sites.
+  - `cancelText: ''` hides the cancel group for hosts that supply their own
+    dismissal.
+  - The option group scrolls instead of overflowing once it outgrows the sheet,
+    and `showZeroPickSourceSheet` presents with `isScrollControlled: true`.
+    Four options previously overflowed by 61px.
+  - Still no new palette fields, and still routing-agnostic.
+
 ## 0.6.0
 
 - Added **`ZeroPickSourceSheet`** — the shared "where should this come from?"
