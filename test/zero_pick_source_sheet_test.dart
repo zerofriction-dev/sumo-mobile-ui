@@ -176,11 +176,37 @@ void main() {
     expect(file, lessThan(remove));
 
     // A row layout would have put them side by side; a fourth option is only
-    // free because they stack.
+    // free because they stack. Labels share a left edge (same column), so a
+    // left-edge match — not a centre match — is what proves vertical stacking.
     expect(
-      tester.getRect(find.text('ถ่ายภาพ')).center.dx,
-      closeTo(tester.getRect(find.text('เลือกไฟล์')).center.dx, 0.5),
+      tester.getRect(find.text('ถ่ายภาพ')).left,
+      closeTo(tester.getRect(find.text('เลือกไฟล์')).left, 0.5),
     );
+  });
+
+  testWidgets('the shorthand options render their supporting description',
+      (tester) async {
+    await pumpSheet(
+      tester,
+      options: [
+        ZeroPickSourceOption.camera(() {}),
+        ZeroPickSourceOption.gallery(() {}),
+      ],
+    );
+
+    expect(find.text('ใช้กล้องถ่ายรูปทันที'), findsOneWidget);
+    expect(find.text('เลือกรูปภาพจากอัลบั้มในเครื่อง'), findsOneWidget);
+  });
+
+  testWidgets('a null description leaves the row without a supporting line',
+      (tester) async {
+    await pumpSheet(
+      tester,
+      options: [ZeroPickSourceOption.camera(() {}, description: null)],
+    );
+
+    expect(find.text('ถ่ายภาพ'), findsOneWidget);
+    expect(find.text('ใช้กล้องถ่ายรูปทันที'), findsNothing);
   });
 
   testWidgets('separators sit between rows, never above the first',

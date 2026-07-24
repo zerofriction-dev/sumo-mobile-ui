@@ -14,6 +14,7 @@ class ZeroPickSourceOption {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.description,
     this.isDestructive = false,
   });
 
@@ -22,6 +23,10 @@ class ZeroPickSourceOption {
 
   /// Row caption. Long labels are ellipsised on one line.
   final String label;
+
+  /// Optional supporting line under [label], e.g. "ใช้กล้องถ่ายรูปทันที".
+  /// Hidden when null or empty; ellipsised on one line.
+  final String? description;
 
   /// Runs after the sheet has closed itself.
   final VoidCallback onTap;
@@ -34,40 +39,48 @@ class ZeroPickSourceOption {
   factory ZeroPickSourceOption.camera(
     VoidCallback onTap, {
     String label = 'ถ่ายภาพ',
+    String? description = 'ใช้กล้องถ่ายรูปทันที',
   }) =>
       ZeroPickSourceOption(
         icon: TablerIcons.camera,
         label: label,
+        description: description,
         onTap: onTap,
       );
 
   factory ZeroPickSourceOption.gallery(
     VoidCallback onTap, {
     String label = 'เลือกจากคลังภาพ',
+    String? description = 'เลือกรูปภาพจากอัลบั้มในเครื่อง',
   }) =>
       ZeroPickSourceOption(
         icon: TablerIcons.photo,
         label: label,
+        description: description,
         onTap: onTap,
       );
 
   factory ZeroPickSourceOption.file(
     VoidCallback onTap, {
     String label = 'เลือกไฟล์',
+    String? description = 'เลือกไฟล์จากในเครื่อง',
   }) =>
       ZeroPickSourceOption(
         icon: TablerIcons.file_text,
         label: label,
+        description: description,
         onTap: onTap,
       );
 
   factory ZeroPickSourceOption.remove(
     VoidCallback onTap, {
     String label = 'ลบรูปที่เลือก',
+    String? description,
   }) =>
       ZeroPickSourceOption(
         icon: TablerIcons.trash,
         label: label,
+        description: description,
         onTap: onTap,
         isDestructive: true,
       );
@@ -140,7 +153,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
               ),
@@ -150,86 +163,61 @@ class ZeroPickSourceSheet extends StatelessWidget {
               Text(
                 subtitle!,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: colors.textSecondary,
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // Scrolls rather than overflows once the option list outgrows the
-            // sheet — the cancel group stays pinned below it either way.
+            // sheet — the cancel button stays pinned below it either way.
             Flexible(
               child: SingleChildScrollView(
-                child: _Group(
-                  colors: colors,
-                  children: [
-                    for (int i = 0; i < options.length; i++) ...[
-                      if (i > 0) _Divider(colors: colors),
-                      _OptionRow(option: options[i], colors: colors),
+                child: Material(
+                  color: Colors.white,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (int i = 0; i < options.length; i++) ...[
+                        if (i > 0) _Divider(colors: colors),
+                        _OptionRow(option: options[i], colors: colors),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
             if (cancelText.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _Group(
-                colors: colors,
-                borderColor: colors.primary,
-                children: [
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text(
-                          cancelText,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
-                          ),
+              const SizedBox(height: 20),
+              Material(
+                color: Colors.white,
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: colors.inputBorder, width: 1.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text(
+                        cancelText,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Group extends StatelessWidget {
-  const _Group({
-    required this.children,
-    required this.colors,
-    this.borderColor,
-  });
-
-  final List<Widget> children;
-  final ZeroUiColors colors;
-
-  /// Defaults to the resting input border. The cancel group passes [primary] so
-  /// it reads as an action rather than more list.
-  final Color? borderColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color border = borderColor ?? colors.inputBorder;
-    return Material(
-      color: Colors.white,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: border, width: borderColor == null ? 1 : 1.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 }
@@ -244,7 +232,7 @@ class _Divider extends StatelessWidget {
     // Indented past the icon so the rows read as one list, the way a grouped
     // list does on iOS.
     return Padding(
-      padding: const EdgeInsets.only(left: 64),
+      padding: const EdgeInsets.only(left: 68),
       child: Divider(height: 1, thickness: 1, color: colors.inputBorder),
     );
   }
@@ -258,10 +246,10 @@ class _OptionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color accent =
-        option.isDestructive ? colors.error : colors.primary;
+    final Color accent = option.isDestructive ? colors.error : colors.primary;
     final Color labelColor =
         option.isDestructive ? colors.error : colors.textPrimary;
+    final String? description = option.description;
 
     return InkWell(
       onTap: () {
@@ -269,35 +257,49 @@ class _OptionRow extends StatelessWidget {
         option.onTap();
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(10),
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(option.icon, size: 22, color: colors.textInverse),
+              child: Icon(option.icon, size: 24, color: accent),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                option.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: labelColor,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    option.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: labelColor,
+                    ),
+                  ),
+                  if (description != null && description.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            Icon(
-              TablerIcons.chevron_right,
-              size: 18,
-              color: colors.iconTertiary,
             ),
           ],
         ),

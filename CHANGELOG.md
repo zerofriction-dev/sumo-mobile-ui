@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0
+
+- **`ZeroPickSourceSheet` row redesign** — richer, softer rows that match the
+  latest app mockup.
+  - Icon tiles go back to a **10%-tinted `primary` background with a coloured
+    (`primary`/`error`) glyph** — now readable because the option group no longer
+    sits on a grey fill (see below). Tiles are larger (48px, radius 14).
+  - **New optional `ZeroPickSourceOption.description`** — a supporting line under
+    the label. The `.camera` / `.gallery` / `.file` shorthands now supply sensible
+    Thai defaults ("ใช้กล้องถ่ายรูปทันที", "เลือกรูปภาพจากอัลบั้มในเครื่อง",
+    "เลือกไฟล์จากในเครื่อง"); pass `description: null` to hide it. `.remove` has
+    no default description.
+  - The option group is now **borderless white** (rows separated only by the
+    indented hairline divider) and the **trailing chevron is gone**.
+  - The cancel button switches to a **neutral grey outline with a `textPrimary`
+    label** instead of the `primary` outline.
+  - Non-breaking: existing call sites keep working; the only API addition is the
+    optional `description`.
+
 ## 0.8.0
 
 - **`ZeroPickSourceSheet` visual pass** — the 0.7.0 list read washed out: a grey
