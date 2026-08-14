@@ -95,7 +95,15 @@ abstract final class ZeroDatePicker {
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
               foregroundColor: colors.primary,
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              // Derived from the ambient text theme rather than written from
+              // scratch: a button's resolved textStyle REPLACES the default
+              // text style (button_style_button.dart passes it straight to
+              // Material.textStyle), so a bare TextStyle here would drop the
+              // host app's fontFamily and print the buttons in the platform
+              // font while every other word in the dialog stays on the app's.
+              textStyle:
+                  (Theme.of(context).textTheme.labelLarge ?? const TextStyle())
+                      .copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           datePickerTheme: _themeFrom(colors, backgroundColor),
