@@ -13,6 +13,11 @@ Widgets:
 - **`ZeroCheckbox`** — controlled checkbox (`value` + `onChanged`) with a plain
   `label` or a custom `labelWidget` (links keep their gestures), `enabled` /
   `hasError` states, and an animated check.
+- **`ZeroPickSourceSheet`** — bottom sheet for choosing camera / gallery / file,
+  opened with `showZeroPickSourceSheet`.
+- **`showZeroDatePicker`** — tap-only date picker in Thai Buddhist years
+  (`ZeroCalendarEra.gregorian` to opt out), with out-of-range days and years
+  greyed out and `initialDate` clamped into the range.
 
 All default to the original Sumo look via **`ZeroUiColors`**; override any color
 per widget with `colors:`.
@@ -25,12 +30,12 @@ Add to your app's `pubspec.yaml`:
 dependencies:
   zero_ui:
     git:
-      url: git@github.com:zerofriction-dev/zero_ui.git
-      ref: v0.3.0   # pin to a tag (recommended)
+      url: https://github.com/zerofriction-dev/sumo-mobile-ui.git
+      ref: v0.10.0   # pin to a tag (recommended)
 ```
 
-> Uses SSH — the machine that runs `flutter pub get` (including CI) needs an SSH
-> key with access to the repo.
+> The repo is private, so the machine that runs `flutter pub get` (including CI)
+> needs access to it.
 
 Then `flutter pub get`.
 
@@ -46,6 +51,14 @@ ZeroTextField(
   controller: nameController,
   hasError: nameError != null,
   errorText: nameError,
+);
+
+// Date picker — returns a Gregorian DateTime, displays Buddhist years
+final picked = await showZeroDatePicker(
+  context,
+  firstDate: DateTime(now.year, now.month, now.day),
+  lastDate: DateTime(now.year + 20),
+  initialDate: expiryDate,
 );
 
 // Searchable dropdown
@@ -78,7 +91,7 @@ ZeroDropdownSearch<Province>(colors: blue, ...);   // same palette, every widget
 4. Bump `version` + `CHANGELOG.md`, then:
 
 ```bash
-git tag v0.3.0
+git tag v0.10.0
 git push origin main --tags
 ```
 

@@ -1,14 +1,14 @@
 name: zero_ui
 description: >-
-  Reusable, themeable Flutter UI widgets (ZeroTextField, ZeroDropdownSearch, ZeroButton, ZeroCheckbox, ZeroPickSourceSheet)
-  with a shared ZeroUiColors palette. Extracted from the Sumo apps.
-version: 0.9.0
+  Reusable, themeable Flutter UI widgets (ZeroTextField, ZeroDropdownSearch, ZeroButton, ZeroCheckbox,
+  ZeroPickSourceSheet, showZeroDatePicker) with a shared ZeroUiColors palette. Extracted from the Sumo apps.
+version: 0.10.0
 publish_to: "none" # private package — distributed via Git, not pub.dev
 homepage: https://github.com/zerofriction-dev/zero_ui
 
 environment:
   sdk: ^3.9.0
-  flutter: ">=3.0.0"
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:

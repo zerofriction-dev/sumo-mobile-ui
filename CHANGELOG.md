@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.10.0
+
+- **New `showZeroDatePicker`** — the shared date picker. Wraps Material's
+  `showDatePicker` and settles three things that have each been a bug in the
+  apps at least once.
+  - **Buddhist years.** New `ZeroCalendarEra` (`buddhist` by default,
+    `gregorian` opt-out) backed by the exported
+    `ZeroBuddhistCalendarDelegate`. Only formatting is overridden; every date
+    calculation stays Gregorian, and the picker still returns real
+    `DateTime`s — the era is a display concern.
+  - **Tap-only.** Opens in `DatePickerEntryMode.calendarOnly`, so there is no
+    pencil button and no text field. Not configurable on purpose: the apps
+    never wanted typed entry, and a typed field would have to agree with the
+    era about which year the digits mean.
+  - **A day you cannot pick never looks pickable.** Material 2 ships no
+    `yearForegroundColor` at all, so out-of-range years used to render in the
+    same colour as usable ones. `ZeroUiColors` is now resolved into every
+    day/year/today slot, disabled state checked before selected.
+  - `initialDate` is clamped into `firstDate`–`lastDate` rather than trusted,
+    so a stale bound cannot trip `showDatePicker`'s assertion; an inverted
+    range collapses to a single pickable day.
+  - `firstDate` and `lastDate` are **required**. Every out-by-a-decade bug this
+    replaces came from a bound nobody looked at.
+  - Header, button and help-text wording default to Thai, so the dialog reads
+    correctly whether or not the host app installs `flutter_localizations`.
+- **Minimum Flutter is now 3.41.0** (was `>=3.0.0`, which had not been true for
+  a while). `CalendarDelegate` is a recent API; all three Sumo apps are pinned
+  at 3.41.8, so this costs nothing today and turns a confusing compile error
+  into a resolve-time message.
+- README: documented `ZeroPickSourceSheet` (shipped in 0.7.0 but never listed)
+  and corrected the install snippet, which pointed at a repo URL that does not
+  exist.
+
 ## 0.9.0
 
 - **`ZeroPickSourceSheet` row redesign** — richer, softer rows that match the
