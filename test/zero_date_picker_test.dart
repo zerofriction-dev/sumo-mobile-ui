@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_ui/zero_ui.dart';
 
-// showZeroDatePicker wraps Material's own dialog, so these tests drive the real
+// ZeroDatePicker.show wraps Material's own dialog, so these tests drive the real
 // dialog and read the colours actually painted on its cells rather than
 // asserting that a theme carries a WidgetState branch — a theme can carry the
 // branch and still resolve to the enabled colour, which is the bug the theme
@@ -32,7 +32,7 @@ void main() {
           builder: (BuildContext context) => Scaffold(
             body: Center(
               child: ElevatedButton(
-                onPressed: () => opened = showZeroDatePicker(
+                onPressed: () => opened = ZeroDatePicker.show(
                   context,
                   firstDate: firstDate,
                   lastDate: lastDate,

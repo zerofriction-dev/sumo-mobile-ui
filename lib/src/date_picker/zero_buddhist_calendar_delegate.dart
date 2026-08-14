@@ -6,7 +6,7 @@ const int kBuddhistEraOffset = 543;
 /// Prints Buddhist-era years in Material's date pickers while leaving every
 /// date calculation Gregorian.
 ///
-/// Pass it to [showDatePicker] (or use [showZeroDatePicker], which does) when a
+/// Pass it to [showDatePicker] (or use [ZeroDatePicker.show], which does) when a
 /// screen shows Thai dates. Only the *formatting* methods are overridden — day
 /// arithmetic, month lengths and weekday offsets all stay on
 /// [GregorianCalendarDelegate], because the Thai Buddhist calendar is the
@@ -44,12 +44,29 @@ class ZeroBuddhistCalendarDelegate extends GregorianCalendarDelegate {
   DateTime _shiftedMonth(DateTime date) =>
       DateTime(date.year + kBuddhistEraOffset, date.month);
 
+  static const String _christianEraTh = 'ค.ศ.';
+  static const String _buddhistEraTh = 'พ.ศ.';
+
+  /// Thai renders an era marker in some formats — `formatMonthYear` and
+  /// `formatFullDate` both come back as "สิงหาคม ค.ศ. 2026". Shifting the year
+  /// without touching the marker produces "สิงหาคม ค.ศ. 2569", which claims the
+  /// Christian era over a Buddhist number.
+  ///
+  /// Only the plain marker is swapped. "ก่อน ค.ศ." (BC) is left alone: no
+  /// caller can reach a BC date, and rewriting it would read "ก่อน พ.ศ.".
+  String _withBuddhistEra(String formatted) =>
+      formatted.contains(_buddhistEraTh) || !formatted.contains(_christianEraTh)
+      ? formatted
+      : formatted.replaceFirst(_christianEraTh, _buddhistEraTh);
+
   String _withBuddhistYear(String formatted, int gregorianYear) {
     final String gregorian = '$gregorianYear';
-    if (!formatted.contains(gregorian)) return formatted;
-    return formatted.replaceFirst(
-      gregorian,
-      '${gregorianYear + kBuddhistEraOffset}',
+    if (!formatted.contains(gregorian)) return _withBuddhistEra(formatted);
+    return _withBuddhistEra(
+      formatted.replaceFirst(
+        gregorian,
+        '${gregorianYear + kBuddhistEraOffset}',
+      ),
     );
   }
 
@@ -59,7 +76,7 @@ class ZeroBuddhistCalendarDelegate extends GregorianCalendarDelegate {
 
   @override
   String formatMonthYear(DateTime date, MaterialLocalizations localizations) =>
-      localizations.formatMonthYear(_shiftedMonth(date));
+      _withBuddhistEra(localizations.formatMonthYear(_shiftedMonth(date)));
 
   @override
   String formatShortDate(DateTime date, MaterialLocalizations localizations) =>
@@ -70,12 +87,14 @@ class ZeroBuddhistCalendarDelegate extends GregorianCalendarDelegate {
       _withBuddhistYear(localizations.formatFullDate(date), date.year);
 
   @override
-  String formatCompactDate(DateTime date, MaterialLocalizations localizations) =>
-      _withBuddhistYear(localizations.formatCompactDate(date), date.year);
+  String formatCompactDate(
+    DateTime date,
+    MaterialLocalizations localizations,
+  ) => _withBuddhistYear(localizations.formatCompactDate(date), date.year);
 
   /// Inverse of [formatCompactDate].
   ///
-  /// Unreachable through [showZeroDatePicker], which never opens the typed
+  /// Unreachable through [ZeroDatePicker.show], which never opens the typed
   /// entry mode, but kept consistent so the delegate round-trips if a caller
   /// hands it to [showDatePicker] directly.
   @override
@@ -85,10 +104,6 @@ class ZeroBuddhistCalendarDelegate extends GregorianCalendarDelegate {
   ) {
     final DateTime? parsed = localizations.parseCompactDate(inputString);
     if (parsed == null) return null;
-    return DateTime(
-      parsed.year - kBuddhistEraOffset,
-      parsed.month,
-      parsed.day,
-    );
+    return DateTime(parsed.year - kBuddhistEraOffset, parsed.month, parsed.day);
   }
 }

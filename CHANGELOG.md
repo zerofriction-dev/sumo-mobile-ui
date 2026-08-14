@@ -1,8 +1,38 @@
 # Changelog
 
+## 0.11.0
+
+- **`showZeroDatePicker` is now `ZeroDatePicker.show`.** Breaking, and
+  deliberately without a deprecated alias: the only consumers are the three Sumo
+  apps, all of which pin a tag, so nothing breaks until each one bumps.
+  - The name was asked for as `ZeroDatePicker`, and a class is the only way to
+    spell it that Dart accepts — a top-level function starting with a capital
+    trips `non_constant_identifier_names`, and this package analyzes clean.
+  - `abstract final class` because there is nothing to construct and nothing to
+    place in a widget tree; it is a namespace for the one static entry point.
+  - `ZeroCalendarEra` is unchanged.
+- **Fixed: the header claimed the wrong era.** Thai supplies an era marker of
+  its own — `formatMonthYear` and `formatFullDate` come back as
+  "สิงหาคม ค.ศ. 2026" — so shifting only the number printed
+  "สิงหาคม **ค.ศ.** 2569", a Buddhist year labelled Christian. The marker is now
+  rewritten alongside the number. `ZeroCalendarEra.gregorian` leaves it alone,
+  and "ก่อน ค.ศ." (BC) is deliberately untouched.
+- **Fixed: the buttons dropped the host app's font.** A button's resolved
+  `textStyle` **replaces** the ambient text style rather than merging with it
+  (`button_style_button.dart` hands it straight to `Material.textStyle`), so
+  naming one without a `fontFamily` printed ตกลง/ยกเลิก in the platform font
+  while every other word in the dialog stayed on the app's. The style is now
+  derived from the ambient `textTheme.labelLarge`.
+  - The same defect sat unnoticed in each app's `calendar_dialog.dart`. It only
+    became visible when the date-range sheet — which had no `textButtonTheme` at
+    all, and so had always inherited correctly — started going through here.
+- Tests now run against real Thai localizations. Both bugs above were invisible
+  under the default English ones, which is how they shipped: English has no era
+  marker in these formats.
+
 ## 0.10.0
 
-- **New `showZeroDatePicker`** — the shared date picker. Wraps Material's
+- **New `showZeroDatePicker`** (renamed to `ZeroDatePicker.show` in 0.11.0) — the shared date picker. Wraps Material's
   `showDatePicker` and settles three things that have each been a bug in the
   apps at least once.
   - **Buddhist years.** New `ZeroCalendarEra` (`buddhist` by default,
