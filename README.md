@@ -15,7 +15,7 @@ Widgets:
   `hasError` states, and an animated check.
 - **`ZeroPickSourceSheet`** — bottom sheet for choosing camera / gallery / file,
   opened with `showZeroPickSourceSheet`.
-- **`showZeroDatePicker`** — tap-only date picker in Thai Buddhist years
+- **`ZeroDatePicker`** — tap-only date picker in Thai Buddhist years
   (`ZeroCalendarEra.gregorian` to opt out), with out-of-range days and years
   greyed out and `initialDate` clamped into the range.
 
@@ -31,7 +31,7 @@ dependencies:
   zero_ui:
     git:
       url: https://github.com/zerofriction-dev/sumo-mobile-ui.git
-      ref: v0.10.0   # pin to a tag (recommended)
+      ref: v0.11.0   # pin to a tag (recommended)
 ```
 
 > The repo is private, so the machine that runs `flutter pub get` (including CI)
@@ -54,7 +54,7 @@ ZeroTextField(
 );
 
 // Date picker — returns a Gregorian DateTime, displays Buddhist years
-final picked = await showZeroDatePicker(
+final picked = await ZeroDatePicker.show(
   context,
   firstDate: DateTime(now.year, now.month, now.day),
   lastDate: DateTime(now.year + 20),
@@ -91,7 +91,7 @@ ZeroDropdownSearch<Province>(colors: blue, ...);   // same palette, every widget
 4. Bump `version` + `CHANGELOG.md`, then:
 
 ```bash
-git tag v0.10.0
+git tag v0.11.0
 git push origin main --tags
 ```
 

@@ -6,7 +6,7 @@ const int kBuddhistEraOffset = 543;
 /// Prints Buddhist-era years in Material's date pickers while leaving every
 /// date calculation Gregorian.
 ///
-/// Pass it to [showDatePicker] (or use [showZeroDatePicker], which does) when a
+/// Pass it to [showDatePicker] (or use [ZeroDatePicker.show], which does) when a
 /// screen shows Thai dates. Only the *formatting* methods are overridden — day
 /// arithmetic, month lengths and weekday offsets all stay on
 /// [GregorianCalendarDelegate], because the Thai Buddhist calendar is the
@@ -75,7 +75,7 @@ class ZeroBuddhistCalendarDelegate extends GregorianCalendarDelegate {
 
   /// Inverse of [formatCompactDate].
   ///
-  /// Unreachable through [showZeroDatePicker], which never opens the typed
+  /// Unreachable through [ZeroDatePicker.show], which never opens the typed
   /// entry mode, but kept consistent so the delegate round-trips if a caller
   /// hands it to [showDatePicker] directly.
   @override

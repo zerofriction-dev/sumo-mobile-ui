@@ -1,7 +1,7 @@
 /// A reusable, themeable Flutter UI widget library extracted from the Sumo apps.
 ///
 /// Exposes [ZeroTextField], [ZeroDropdownSearch], [ZeroButton], [ZeroCheckbox],
-/// [ZeroPickSourceSheet] and [showZeroDatePicker] — widgets sharing a single
+/// [ZeroPickSourceSheet] and [ZeroDatePicker] — widgets sharing a single
 /// [ZeroUiColors] palette whose defaults reproduce the original design.
 library;
 

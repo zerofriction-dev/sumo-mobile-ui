@@ -1,8 +1,20 @@
 # Changelog
 
+## 0.11.0
+
+- **`showZeroDatePicker` is now `ZeroDatePicker.show`.** Breaking, and
+  deliberately without a deprecated alias: the only consumers are the three Sumo
+  apps, all of which pin a tag, so nothing breaks until each one bumps.
+  - The name was asked for as `ZeroDatePicker`, and a class is the only way to
+    spell it that Dart accepts — a top-level function starting with a capital
+    trips `non_constant_identifier_names`, and this package analyzes clean.
+  - `abstract final class` because there is nothing to construct and nothing to
+    place in a widget tree; it is a namespace for the one static entry point.
+  - `ZeroBuddhistCalendarDelegate` and `ZeroCalendarEra` are unchanged.
+
 ## 0.10.0
 
-- **New `showZeroDatePicker`** — the shared date picker. Wraps Material's
+- **New `showZeroDatePicker`** (renamed to `ZeroDatePicker.show` in 0.11.0) — the shared date picker. Wraps Material's
   `showDatePicker` and settles three things that have each been a bug in the
   apps at least once.
   - **Buddhist years.** New `ZeroCalendarEra` (`buddhist` by default,
