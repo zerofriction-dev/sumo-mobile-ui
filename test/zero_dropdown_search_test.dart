@@ -200,4 +200,109 @@ void main() {
     await tester.pumpWidget(wrap(build()));
     expect(find.byIcon(TablerIcons.x), findsNothing);
   });
+
+  testWidgets('searchFilter takes over from the itemAsString match', (
+    tester,
+  ) async {
+    // The label is Thai; the query is the English name it does not contain.
+    await tester.pumpWidget(
+      wrap(
+        ZeroDropdownSearch<String>(
+          items: const ['กรุงเทพมหานคร', 'เชียงใหม่'],
+          itemAsString: (s) => s,
+          searchFilter: (item, query) =>
+              item == 'กรุงเทพมหานคร' && 'bangkok'.startsWith(query),
+          suggestionsCallback: (q) => const ['กรุงเทพมหานคร', 'เชียงใหม่'],
+          itemBuilder: (ctx, s) => ListTile(title: Text(s)),
+          onSuggestionSelected: (s, text) {},
+        ),
+      ),
+    );
+    await openDropdown(tester);
+    await tester.enterText(find.byType(TextField), 'bang');
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+
+    expect(find.widgetWithText(ListTile, 'กรุงเทพมหานคร'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'เชียงใหม่'), findsNothing);
+  });
+
+  testWidgets('without searchFilter it still matches on the label', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap(build()));
+    await openDropdown(tester);
+    await tester.enterText(find.byType(TextField), 'ap');
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+
+    expect(find.widgetWithText(ListTile, 'Apple'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Banana'), findsNothing);
+  });
+
+  testWidgets('selectedItemBuilder draws the resting value', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        ZeroDropdownSearch<String>(
+          items: fruits,
+          itemAsString: (s) => s,
+          initialValue: 'Banana',
+          suggestionsCallback: (q) => fruits,
+          itemBuilder: (ctx, s) => ListTile(title: Text(s)),
+          selectedItemBuilder: (ctx, s) =>
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.star, key: Key('badge')),
+                Text(s),
+              ]),
+          onSuggestionSelected: (s, text) {},
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('badge')), findsOneWidget);
+
+    // Focused, the field is a search box — the badge makes way for the query.
+    await openDropdown(tester);
+    expect(find.byKey(const Key('badge')), findsNothing);
+  });
+
+  testWidgets('a prefixIcon keeps the value as plain text', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        ZeroDropdownSearch<String>(
+          items: fruits,
+          itemAsString: (s) => s,
+          initialValue: 'Banana',
+          prefixIcon: const Icon(Icons.search),
+          suggestionsCallback: (q) => fruits,
+          itemBuilder: (ctx, s) => ListTile(title: Text(s)),
+          selectedItemBuilder: (ctx, s) =>
+              const Icon(Icons.star, key: Key('badge')),
+          onSuggestionSelected: (s, text) {},
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('badge')), findsNothing);
+    expect(fieldText(tester), 'Banana');
+  });
+
+  testWidgets('direction up hands the box an upward direction', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        Padding(
+          padding: const EdgeInsets.only(top: 500),
+          child: ZeroDropdownSearch<String>(
+            items: fruits,
+            itemAsString: (s) => s,
+            direction: AxisDirection.up,
+            suggestionsCallback: (q) => fruits,
+            itemBuilder: (ctx, s) => ListTile(title: Text(s)),
+            onSuggestionSelected: (s, text) {},
+          ),
+        ),
+      ),
+    );
+    await openDropdown(tester);
+
+    final field = tester.getRect(find.byType(TextField));
+    final list = tester.getRect(find.byType(ListTile).first);
+    expect(list.top, lessThan(field.top));
+  });
 }

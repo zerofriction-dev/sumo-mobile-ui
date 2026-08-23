@@ -26,12 +26,20 @@ class ZeroDropdownSearch<T> extends StatefulWidget {
   final String? label;
   final String? hint;
   final Widget? prefixIcon;
-  final bool readOnly;
   final bool enabled;
   final EdgeInsetsGeometry? margin;
   final AxisDirection direction;
   final List<T> items;
   final String Function(T) itemAsString;
+
+  /// Decides whether [item] matches what has been typed.
+  ///
+  /// Defaults to a case-insensitive `contains` over [itemAsString], which only
+  /// ever sees one language. Supply this where an item can be found by a name
+  /// [itemAsString] does not return — a Thai province searched for in English,
+  /// say — and have [suggestionsCallback] return the unfiltered list, so the
+  /// query is applied once, here, rather than twice by two different rules.
+  final bool Function(T item, String query)? searchFilter;
   final T? initialValue;
   final String? title;
   final bool hasError;
@@ -55,11 +63,11 @@ class ZeroDropdownSearch<T> extends StatefulWidget {
     this.selectedItemBuilder,
     required this.items,
     required this.itemAsString,
+    this.searchFilter,
     this.initialValue,
     this.label,
     this.hint,
     this.prefixIcon,
-    this.readOnly = false,
     this.enabled = true,
     this.margin,
     this.direction = AxisDirection.down,
@@ -87,6 +95,15 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   List<T> _visibleItems = <T>[];
 
   static const _boxAnimation = Duration(milliseconds: 200);
+
+  /// Horizontal inset of the text inside the field.
+  static const _contentInset = 18.0;
+
+  /// Width of one trailing button, and of the gaps around the pair.
+  static const _suffixButtonSize = 28.0;
+  static const _suffixGap = 6.0;
+  static const _suffixLead = 8.0;
+  static const _suffixTrail = 14.0;
 
   ZeroUiColors get _colors => widget.colors;
 
@@ -198,19 +215,16 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   FutureOr<List<T>> _localSuggestionsCallback(String pattern) async {
     final query = _focusNode.hasFocus ? _controller.text.trim() : '';
     final items = await widget.suggestionsCallback(query);
+    final matches = widget.searchFilter ?? _matchesByLabel;
     final result = query.isEmpty
         ? items
-        : items
-              .where(
-                (item) => widget
-                    .itemAsString(item)
-                    .toLowerCase()
-                    .contains(query.toLowerCase()),
-              )
-              .toList();
+        : items.where((item) => matches(item, query)).toList();
     _visibleItems = result;
     return result;
   }
+
+  bool _matchesByLabel(T item, String query) =>
+      widget.itemAsString(item).toLowerCase().contains(query.toLowerCase());
 
   bool _isSelected(T item) {
     final value = _selectedValue;
@@ -328,10 +342,52 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     return IconButton(
       padding: EdgeInsets.zero,
       visualDensity: VisualDensity.compact,
-      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      constraints: const BoxConstraints(
+        minWidth: _suffixButtonSize,
+        minHeight: _suffixButtonSize,
+      ),
       iconSize: 20,
       icon: Icon(icon, color: color),
       onPressed: onPressed,
+    );
+  }
+
+  /// Whether the selected value is being drawn by [ZeroDropdownSearch
+  /// .selectedItemBuilder] rather than as plain text.
+  ///
+  /// Only while the field is at rest: focused, it is a search box, and what
+  /// belongs in it is the query. A `prefixIcon` occupies the same room and
+  /// makes the inset unknowable, so it wins and the value stays text.
+  bool get _showsCustomSelection =>
+      widget.selectedItemBuilder != null &&
+      widget.prefixIcon == null &&
+      _selectedValue != null &&
+      !_isFocused;
+
+  double get _suffixWidth {
+    final buttons = _canClear
+        ? _suffixButtonSize * 2 + _suffixGap
+        : _suffixButtonSize;
+    return _suffixLead + buttons + _suffixTrail;
+  }
+
+  /// Sits over the text, inset to the same place the text would have been, so
+  /// the two are interchangeable to look at. Never takes a tap: the field
+  /// underneath still has to open on one.
+  Widget _selectedOverlay(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: _contentInset,
+            right: _suffixWidth,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: widget.selectedItemBuilder!(context, _selectedValue as T),
+          ),
+        ),
+      ),
     );
   }
 
@@ -376,21 +432,26 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
           TypeAheadField<T>(
             controller: _controller,
             focusNode: _focusNode,
+            direction: widget.direction == AxisDirection.up
+                ? VerticalDirection.up
+                : VerticalDirection.down,
             autoFlipDirection: true,
             animationDuration: _boxAnimation,
             suggestionsController: _suggestionsController,
             scrollController: _scrollController,
             suggestionsCallback: _localSuggestionsCallback,
             builder: (context, textEditingController, focusNode) {
-              return TextField(
+              final field = TextField(
                 controller: textEditingController,
                 focusNode: focusNode,
                 enabled: widget.enabled,
                 style: TextStyle(
                   fontSize: 16,
-                  color: widget.enabled
-                      ? _colors.textPrimary
-                      : _colors.textDisabled,
+                  color: _showsCustomSelection
+                      ? Colors.transparent
+                      : (widget.enabled
+                            ? _colors.textPrimary
+                            : _colors.textDisabled),
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
@@ -421,7 +482,10 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     minHeight: 0,
                   ),
                   suffixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 8, right: 14),
+                    padding: const EdgeInsets.only(
+                      left: _suffixLead,
+                      right: _suffixTrail,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -431,7 +495,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                             color: _colors.iconSecondary,
                             onPressed: _handleClear,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: _suffixGap),
                         ],
                         _suffixButton(
                           icon: _isDropdownOpen
@@ -446,15 +510,13 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     ),
                   ),
                   contentPadding: EdgeInsets.symmetric(
-                    horizontal: 18,
+                    horizontal: _contentInset,
                     vertical: 10,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(
-                      color: widget.readOnly
-                          ? _colors.inputBorder
-                          : _colors.inputBorderFocused,
+                      color: _colors.inputBorderFocused,
                       width: 2.0,
                     ),
                   ),
@@ -490,6 +552,8 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                   ),
                 ),
               );
+              if (!_showsCustomSelection) return field;
+              return Stack(children: [field, _selectedOverlay(context)]);
             },
             itemBuilder: _buildItem,
             // Capping the list from inside keeps the box anchored to the

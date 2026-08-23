@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.13.0
+
+Three parameters `ZeroDropdownSearch` accepted and then ignored. Two of them
+were being passed by call sites that had no way of knowing nothing happened.
+
+- **`selectedItemBuilder` now draws the selected value.** Five fields in the
+  Sumo super-app pass one to put a company logo or a car badge beside what has
+  been chosen; the widget never called it, so the logo never appeared and the
+  value rendered as bare text. It is drawn while the field is at rest, inset to
+  exactly where the text would have been, and steps aside when the field takes
+  focus — focused, the field is a search box, and what belongs in it is the
+  query. A `prefixIcon` occupies the same room and makes the inset unknowable,
+  so it wins and the value stays text.
+- **`direction` is passed through.** `AxisDirection.up` had no effect at all;
+  the box opened downwards and only ever went up by auto-flipping. Two towing
+  registration fields — one in provider, one in company — have been asking for
+  upward since they were written.
+- **`readOnly` is gone.** Breaking, though nothing passes it: the field was
+  never made read-only, the flag only picked a border colour, and `enabled`
+  already covers a field that should not be edited. Better absent than present
+  and lying.
+- **New `searchFilter`** decides whether an item matches what was typed.
+  Without it the widget matches on `itemAsString`, which only ever sees one
+  language: a caller whose own `suggestionsCallback` matched Thai *and* English
+  had its English hits thrown away by the widget's second, narrower pass. Pass
+  `searchFilter` and return the list unfiltered, and the query is applied once.
+
 ## 0.12.0
 
 - **`ZeroDropdownSearch` now behaves as a search selection.** Opening a field
