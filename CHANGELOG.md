@@ -1,5 +1,68 @@
 # Changelog
 
+## 0.12.0
+
+- **`ZeroDropdownSearch` now behaves as a search selection.** Opening a field
+  that already held a value used to list only that value: the text box doubled
+  as both the display of the selection and the search query, so the filter ran
+  against the label already in it. The only way out was to press the clear
+  button first — which the ticket reporting this called out as something no one
+  would guess.
+  - Focus now means *search*. Entering the field empties the query, so the
+    whole list shows; leaving it writes the selection back. The selected label
+    stays visible as the placeholder while searching, the way Semantic UI's
+    search selection shows it, so clearing the box never hides what the field
+    holds.
+  - **The value only changes when it is meant to.** Picking an item or pressing
+    clear changes it; typing and walking away no longer does. Previously any
+    text that did not exactly match an item silently reported `null` on blur —
+    a half-typed query was enough to wipe a chosen province, and with it every
+    dependent field downstream.
+  - **The current selection is marked and lifted to the top of the list.** The
+    matching row gets a tint and a check, and the list opens on it rather than
+    at its own head, which is the difference between finding your province and
+    scrolling 77 of them. New `ZeroUiColors.dropdownItemSelected` sets the tint.
+    - An item near the end only gets as far as the list itself does, and settles
+      wherever the last screenful leaves it. The box keeps its height either
+      way — neither padded out nor shrunk to fit, which is what Semantic UI
+      does and what leaves no empty stretch under the last row.
+    - A box that opens upwards is reversed, which puts scroll offset zero at
+      the edge nearest the field — the same edge this scrolls to — so both
+      directions come out of the same arithmetic.
+  - Items are matched by identity, `==`, *and* label, because the list and the
+    selection routinely come from different fetches of models that define no
+    `==`.
+  - The query no longer comes from the typeahead's debounced pattern, which is
+    a beat behind the text and, on the first open, is still the old label.
+  - The chevron follows the suggestions box instead of a 150 ms timer, so it
+    no longer points the wrong way after the box closes on its own.
+  - The suggestions controller is disposed. It never was.
+- **The open list stops at 70% of the screen.** Left alone it grows into
+  whatever room is below the field, which on a short form is the whole screen —
+  the field's own neighbours disappear behind it and there is nothing left to
+  orient by. New `maxHeightFactor` sets the share; the cap is applied from
+  inside the list rather than through `TypeAheadField.constraints`, which
+  aligns a shortened box by the direction it was *asked* to open in and so
+  leaves a gap under one that has auto-flipped upwards.
+- **A list that opens upwards now reads the same way round as one that opens
+  down.** The typeahead flips the list over in that case, to put the first row
+  against the field — which left จังหวัด running bottom to top, backwards from
+  the identical field a few pixels higher up the form. The order is now fixed
+  and the selected row goes to the top either way.
+- **The two trailing buttons are the same size and evenly spaced.** The chevron
+  was a stock `IconButton` — a 24px glyph in a 48px box — next to a 20px clear
+  button in a 32px one, so they sat at different weights with an uneven gap and
+  the pair floated away from the border. Both are now 20px in a 28px box, and
+  the chevron clears the border by the same 18px the text is inset on the left.
+
+- **One deliberate departure from Semantic UI.** There, leaving the field with
+  a query still typed commits the first match — `forceSelection`. Here it
+  restores the previous value instead. On a list of Thai provinces a one-letter
+  query is normal, and committing its first match would quietly swap someone's
+  จังหวัด for a different one on the way past, taking the district and postcode
+  with it. Text that matches nothing is discarded either way.
+- No API change: every existing call site keeps working untouched.
+
 ## 0.11.0
 
 - **`showZeroDatePicker` is now `ZeroDatePicker.show`.** Breaking, and
