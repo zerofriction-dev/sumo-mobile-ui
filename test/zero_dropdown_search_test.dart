@@ -6,6 +6,8 @@ import 'package:zero_ui/zero_ui.dart';
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
+  const fruits = ['Apple', 'Banana', 'Cherry'];
+
   ZeroDropdownSearch<String> build({
     String? label,
     String? title,
@@ -13,14 +15,17 @@ void main() {
     bool hasError = false,
     String? errorText,
     bool isRequired = true,
+    String? initialValue,
+    void Function(String?, String)? onSelected,
     ZeroUiColors colors = const ZeroUiColors(),
   }) {
     return ZeroDropdownSearch<String>(
-      items: const ['Apple', 'Banana'],
+      items: fruits,
       itemAsString: (s) => s,
-      suggestionsCallback: (q) => const ['Apple', 'Banana'],
+      suggestionsCallback: (q) => fruits,
       itemBuilder: (ctx, s) => ListTile(title: Text(s)),
-      onSuggestionSelected: (s, text) {},
+      onSuggestionSelected: onSelected ?? (s, text) {},
+      initialValue: initialValue,
       label: label,
       title: title,
       hint: hint,
@@ -29,6 +34,14 @@ void main() {
       isRequired: isRequired,
       colors: colors,
     );
+  }
+
+  String fieldText(WidgetTester tester) =>
+      tester.widget<TextField>(find.byType(TextField)).controller!.text;
+
+  Future<void> openDropdown(WidgetTester tester) async {
+    await tester.tap(find.byType(TextField));
+    await tester.pumpAndSettle();
   }
 
   testWidgets('renders label text when provided', (tester) async {
@@ -60,8 +73,131 @@ void main() {
 
   testWidgets('accepts a custom color palette', (tester) async {
     await tester.pumpWidget(
-      wrap(build(label: 'Themed', colors: const ZeroUiColors(primary: Colors.blue))),
+      wrap(
+        build(label: 'Themed', colors: const ZeroUiColors(primary: Colors.blue)),
+      ),
     );
     expect(find.byType(ZeroDropdownSearch<String>), findsOneWidget);
+  });
+
+  testWidgets('shows the selected item while closed', (tester) async {
+    await tester.pumpWidget(wrap(build(initialValue: 'Banana')));
+    expect(fieldText(tester), 'Banana');
+  });
+
+  testWidgets('opening with a selection lists every item, not just that one', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap(build(initialValue: 'Banana')));
+    await openDropdown(tester);
+
+    expect(find.widgetWithText(ListTile, 'Apple'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Banana'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Cherry'), findsOneWidget);
+  });
+
+  testWidgets('opening clears the box and keeps the selection as the hint', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap(build(initialValue: 'Banana')));
+    await openDropdown(tester);
+
+    expect(fieldText(tester), '');
+    expect(find.text('Banana'), findsWidgets);
+  });
+
+  testWidgets('marks the selected item in the list', (tester) async {
+    await tester.pumpWidget(wrap(build(initialValue: 'Banana')));
+    await openDropdown(tester);
+
+    expect(find.byIcon(TablerIcons.check), findsOneWidget);
+    final row = find.ancestor(
+      of: find.widgetWithText(ListTile, 'Banana'),
+      matching: find.byType(Row),
+    );
+    expect(
+      find.descendant(of: row.first, matching: find.byIcon(TablerIcons.check)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('typing filters the list', (tester) async {
+    await tester.pumpWidget(wrap(build(initialValue: 'Banana')));
+    await openDropdown(tester);
+
+    await tester.enterText(find.byType(TextField), 'ch');
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+
+    expect(find.widgetWithText(ListTile, 'Cherry'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Apple'), findsNothing);
+  });
+
+  testWidgets('leaving without picking restores the previous selection', (
+    tester,
+  ) async {
+    String? reported = 'untouched';
+    var reportCount = 0;
+    await tester.pumpWidget(
+      wrap(
+        build(
+          initialValue: 'Banana',
+          onSelected: (value, _) {
+            reported = value;
+            reportCount++;
+          },
+        ),
+      ),
+    );
+    await openDropdown(tester);
+    await tester.enterText(find.byType(TextField), 'ch');
+    await tester.pumpAndSettle(const Duration(milliseconds: 400));
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+
+    expect(fieldText(tester), 'Banana');
+    expect(reportCount, 0);
+    expect(reported, 'untouched');
+  });
+
+  testWidgets('picking an item reports it and shows it in the field', (
+    tester,
+  ) async {
+    String? reported;
+    await tester.pumpWidget(
+      wrap(build(initialValue: 'Banana', onSelected: (value, _) => reported = value)),
+    );
+    await openDropdown(tester);
+    await tester.tap(find.widgetWithText(ListTile, 'Cherry'));
+    await tester.pumpAndSettle();
+
+    expect(reported, 'Cherry');
+    expect(fieldText(tester), 'Cherry');
+  });
+
+  testWidgets('the clear button drops the value and reports null', (
+    tester,
+  ) async {
+    String? reported = 'untouched';
+    await tester.pumpWidget(
+      wrap(build(initialValue: 'Banana', onSelected: (value, _) => reported = value)),
+    );
+    await openDropdown(tester);
+
+    await tester.tap(find.byIcon(TablerIcons.x));
+    await tester.pumpAndSettle();
+
+    expect(reported, isNull);
+    expect(fieldText(tester), '');
+  });
+
+  testWidgets('the clear button is offered while a value is selected', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap(build(initialValue: 'Banana')));
+    expect(find.byIcon(TablerIcons.x), findsOneWidget);
+
+    await tester.pumpWidget(wrap(build()));
+    expect(find.byIcon(TablerIcons.x), findsNothing);
   });
 }

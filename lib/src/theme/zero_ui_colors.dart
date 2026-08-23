@@ -43,6 +43,9 @@ class ZeroUiColors {
   /// Color of tertiary icons (e.g. the dropdown chevron while closed).
   final Color iconTertiary;
 
+  /// Tint behind the item a dropdown currently has selected.
+  final Color dropdownItemSelected;
+
   /// Text/icon color on a filled primary button (e.g. white on red).
   final Color textInverse;
 
@@ -65,6 +68,7 @@ class ZeroUiColors {
     this.inputBorderError = const Color(0xFFFC0000),
     this.iconSecondary = const Color(0xFF595959),
     this.iconTertiary = const Color(0xFF818181),
+    this.dropdownItemSelected = const Color(0x0D000000),
     this.textInverse = const Color(0xFFFFFFFF),
     this.buttonDisabled = const Color(0xFFE0E0E0),
     this.overlayDark = const Color(0x80000000),
@@ -84,6 +88,7 @@ class ZeroUiColors {
     Color? inputBorderError,
     Color? iconSecondary,
     Color? iconTertiary,
+    Color? dropdownItemSelected,
     Color? textInverse,
     Color? buttonDisabled,
     Color? overlayDark,
@@ -101,6 +106,7 @@ class ZeroUiColors {
       inputBorderError: inputBorderError ?? this.inputBorderError,
       iconSecondary: iconSecondary ?? this.iconSecondary,
       iconTertiary: iconTertiary ?? this.iconTertiary,
+      dropdownItemSelected: dropdownItemSelected ?? this.dropdownItemSelected,
       textInverse: textInverse ?? this.textInverse,
       buttonDisabled: buttonDisabled ?? this.buttonDisabled,
       overlayDark: overlayDark ?? this.overlayDark,

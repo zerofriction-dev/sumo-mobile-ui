@@ -6,16 +6,16 @@ import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../theme/zero_ui_colors.dart';
 
-T? _firstWhereOrNull<T>(Iterable<T> items, bool Function(T) test) {
-  for (var item in items) {
-    if (test(item)) return item;
-  }
-  return null;
-}
-
 /// A searchable dropdown built on `flutter_typeahead`, with a floating label,
 /// an optional required marker, a clear button, and an externally controlled
 /// error state.
+///
+/// It behaves as a **search selection**: closed, the field shows the selected
+/// item; focused, it turns into an empty search box over the *whole* list, with
+/// the current selection kept as the placeholder, highlighted in the list and
+/// scrolled into view. Typing filters. Leaving without picking restores the
+/// previous selection — the value only changes when an item is picked or the
+/// clear button is pressed.
 ///
 /// Colors default to [ZeroUiColors] but can be fully overridden via [colors].
 class ZeroDropdownSearch<T> extends StatefulWidget {
@@ -72,8 +72,12 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   late final SuggestionsController<T> _suggestionsController;
+  late final ScrollController _scrollController;
+
   T? _selectedValue;
   bool _isDropdownOpen = false;
+  bool _suppressTextChanged = false;
+  List<T> _visibleItems = <T>[];
 
   ZeroUiColors get _colors => widget.colors;
 
@@ -83,6 +87,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     _controller = TextEditingController();
     _focusNode = FocusNode();
     _suggestionsController = SuggestionsController<T>();
+    _scrollController = ScrollController();
 
     final initialValue = widget.initialValue;
     if (initialValue != null) {
@@ -92,61 +97,16 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
 
     _focusNode.addListener(_onFocusChanged);
     _controller.addListener(_onTextChanged);
-  }
-
-  bool _suppressTextChanged = false;
-
-  void _onTextChanged() {
-    if (!mounted || _suppressTextChanged) return;
-    if (_controller.text.isEmpty && _selectedValue != null) {
-      _selectedValue = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onSuggestionSelected(null, '');
-      });
-    }
-    setState(() {});
-  }
-
-  void _onFocusChanged() {
-    if (!mounted) return;
-    if (_focusNode.hasFocus) {
-      setState(() => _isDropdownOpen = true);
-    } else {
-      Future.delayed(Duration(milliseconds: 150), () {
-        if (mounted) setState(() => _isDropdownOpen = false);
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final currentText = _controller.text.trim();
-
-        final match = _firstWhereOrNull(
-          widget.items,
-              (e) => widget.itemAsString(e).trim() == currentText,
-        );
-
-        if (match != null) {
-          if (match != _selectedValue) {
-            _selectedValue = match;
-            widget.onSuggestionSelected(match, currentText);
-          }
-        } else {
-          if (_selectedValue != null) {
-            _selectedValue = null;
-            _controller.clear();
-            widget.onSuggestionSelected(null, '');
-          } else {
-            _controller.clear();
-          }
-        }
-      });
-    }
+    _suggestionsController.addListener(_onSuggestionsControllerChanged);
   }
 
   @override
   void dispose() {
+    _suggestionsController.removeListener(_onSuggestionsControllerChanged);
     _controller.removeListener(_onTextChanged);
     _focusNode.removeListener(_onFocusChanged);
+    _suggestionsController.dispose();
+    _scrollController.dispose();
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();
@@ -162,67 +122,172 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
         widget.initialValue != null && widget.initialValue != _selectedValue;
 
     if (hasInitialValueChanged || shouldSyncInitialValue) {
-      _suppressTextChanged = true;
-      if (widget.initialValue != null) {
-        final text = widget.itemAsString(widget.initialValue as T);
-        _selectedValue = widget.initialValue;
-        _controller
-          ..text = text
-          ..selection = TextSelection.fromPosition(
-            TextPosition(offset: text.length),
-          );
-      } else {
-        _selectedValue = null;
-        _controller.clear();
-      }
-      _suppressTextChanged = false;
+      _selectedValue = widget.initialValue;
+      _syncTextToSelection();
     }
 
     if (!listEquals(oldWidget.items, widget.items) &&
         _selectedValue != null &&
         !widget.items.contains(_selectedValue)) {
       _selectedValue = null;
-      _controller.clear();
+      _syncTextToSelection();
     }
   }
 
-  FutureOr<List<T>> _localSuggestionsCallback(String pattern) async {
-    final allItems = await widget.suggestionsCallback(pattern);
-    if (pattern.isEmpty) return allItems;
-    return allItems
-        .where(
-          (item) => widget
-          .itemAsString(item)
-          .toLowerCase()
-          .contains(pattern.toLowerCase()),
-    )
-        .toList();
+  String get _selectedLabel {
+    final value = _selectedValue;
+    return value == null ? '' : widget.itemAsString(value);
   }
 
-  void _handleSuffixIconPress(BuildContext context) {
-    if (!mounted || !widget.enabled) return;
+  /// Writes [text] without letting [_onTextChanged] read it as user input.
+  void _setText(String text) {
+    if (_controller.text == text) return;
+    _suppressTextChanged = true;
+    _controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+    _suppressTextChanged = false;
+  }
 
-    if (_isDropdownOpen) {
-      _focusNode.unfocus();
+  /// While the field is focused the box holds the search query, so the
+  /// selection is only ever written back into it once the field is left.
+  void _syncTextToSelection() {
+    if (_focusNode.hasFocus) return;
+    _setText(_selectedLabel);
+  }
+
+  void _onTextChanged() {
+    if (!mounted || _suppressTextChanged) return;
+    setState(() {});
+  }
+
+  void _onSuggestionsControllerChanged() {
+    if (!mounted) return;
+    final isOpen = _suggestionsController.isOpen;
+    if (isOpen == _isDropdownOpen) return;
+    setState(() => _isDropdownOpen = isOpen);
+    if (isOpen) _scheduleScrollToSelected();
+  }
+
+  void _onFocusChanged() {
+    if (!mounted) return;
+    if (_focusNode.hasFocus) {
+      // Search mode. An empty query is what makes the full list show up
+      // instead of just the item that is already selected.
+      _setText('');
+      _scheduleScrollToSelected();
+    } else {
+      _setText(_selectedLabel);
+    }
+    setState(() {});
+  }
+
+  /// The pattern the typeahead hands over is a debounce behind, and on the
+  /// first open it is still the label of the selected item — which is what used
+  /// to shrink the list down to that one item. The live text is the query.
+  FutureOr<List<T>> _localSuggestionsCallback(String pattern) async {
+    final query = _focusNode.hasFocus ? _controller.text.trim() : '';
+    final items = await widget.suggestionsCallback(query);
+    final result = query.isEmpty
+        ? items
+        : items
+              .where(
+                (item) => widget
+                    .itemAsString(item)
+                    .toLowerCase()
+                    .contains(query.toLowerCase()),
+              )
+              .toList();
+    _visibleItems = result;
+    return result;
+  }
+
+  bool _isSelected(T item) {
+    final value = _selectedValue;
+    if (value == null) return false;
+    if (identical(item, value) || item == value) return true;
+    // The list and the selection often come from different fetches, so a model
+    // without `==` would never match by identity alone.
+    return widget.itemAsString(item) == widget.itemAsString(value);
+  }
+
+  void _scheduleScrollToSelected() {
+    if (_selectedValue == null) return;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scrollToSelected(retry: true),
+    );
+  }
+
+  void _scrollToSelected({bool retry = false}) {
+    if (!mounted || _selectedValue == null) return;
+    if (!_scrollController.hasClients) {
+      if (retry) {
+        Future.delayed(
+          const Duration(milliseconds: 120),
+          () => _scrollToSelected(),
+        );
+      }
+      return;
+    }
+
+    final index = _visibleItems.indexWhere(_isSelected);
+    if (index <= 0) return;
+
+    final position = _scrollController.position;
+    if (position.maxScrollExtent <= 0) return;
+
+    // Rows in these lists are uniform, so the laid-out extent divided by the
+    // item count is an accurate stand-in for a per-item height.
+    final itemExtent =
+        (position.maxScrollExtent + position.viewportDimension) /
+        _visibleItems.length;
+    _scrollController.jumpTo(
+      (index * itemExtent).clamp(0.0, position.maxScrollExtent),
+    );
+  }
+
+  void _handleClear() {
+    if (!mounted || !widget.enabled) return;
+    final hadValue = _selectedValue != null;
+    setState(() => _selectedValue = null);
+    _setText('');
+    if (!_focusNode.hasFocus) _focusNode.requestFocus();
+    _suggestionsController
+      ..open()
+      ..refresh();
+    if (hadValue) widget.onSuggestionSelected(null, '');
+  }
+
+  void _handleTogglePress() {
+    if (!mounted || !widget.enabled) return;
+    if (_focusNode.hasFocus || _suggestionsController.isOpen) {
       _suggestionsController.close();
+      _focusNode.unfocus();
     } else {
       _focusNode.requestFocus();
       _suggestionsController.open();
     }
-
-    if (mounted) {
-      setState(() => _isDropdownOpen = !_isDropdownOpen);
-    }
   }
 
   bool get _isFocused => _focusNode.hasFocus;
-  bool get _hasText => _controller.text.isNotEmpty;
+  bool get _hasValue => _selectedValue != null || _controller.text.isNotEmpty;
+  bool get _canClear => widget.enabled && _hasValue;
 
   Color _getLabelColor() {
     if (widget.hasError) return _colors.error;
     if (_isFocused) return _colors.primary;
-    if (_hasText) return _colors.textSecondary;
+    if (_hasValue) return _colors.textSecondary;
     return _colors.textPlaceholder;
+  }
+
+  String? _getHintText() {
+    // Focused with something already chosen: keep it visible as the
+    // placeholder, the way a search selection does, so clearing the box to
+    // search does not hide what the field currently holds.
+    if (_isFocused && _selectedValue != null) return _selectedLabel;
+    if (widget.hint != null) return widget.hint;
+    return widget.label != null ? 'เลือก${widget.label}' : null;
   }
 
   Widget? _buildLabel() {
@@ -236,6 +301,23 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
         text: text,
         children: [
           TextSpan(text: ' *', style: TextStyle(color: _colors.error)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItem(BuildContext context, T item) {
+    final child = widget.itemBuilder(context, item);
+    if (!_isSelected(item)) return child;
+    return ColoredBox(
+      color: _colors.dropdownItemSelected,
+      child: Row(
+        children: [
+          Expanded(child: child),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Icon(TablerIcons.check, size: 18, color: _colors.primary),
+          ),
         ],
       ),
     );
@@ -267,6 +349,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
             focusNode: _focusNode,
             autoFlipDirection: true,
             suggestionsController: _suggestionsController,
+            scrollController: _scrollController,
             suggestionsCallback: _localSuggestionsCallback,
             builder: (context, textEditingController, focusNode) {
               return TextField(
@@ -296,52 +379,42 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     fontWeight: FontWeight.w500,
                     color: _getLabelColor(),
                   ),
-                  hintText:
-                      widget.hint ??
-                      (widget.label != null ? 'เลือก${widget.label}' : null),
+                  hintText: _getHintText(),
                   hintStyle: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
                     color: _colors.textPlaceholder,
                   ),
                   prefixIcon: widget.prefixIcon,
-                  suffixIcon: Builder(
-                    builder: (context) => Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_hasText && _isFocused)
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: BoxConstraints(
-                              minWidth: 32,
-                              minHeight: 32,
-                            ),
-                            icon: Icon(
-                              TablerIcons.x,
-                              color: _colors.iconSecondary,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _selectedValue = null;
-                                _controller.clear();
-                              });
-                              widget.onSuggestionSelected(null, '');
-                            },
-                          ),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_canClear)
                         IconButton(
-                          icon: Icon(
-                            _isDropdownOpen
-                                ? TablerIcons.chevron_up
-                                : TablerIcons.chevron_down,
-                            color: _isDropdownOpen
-                                ? _colors.primary
-                                : _colors.iconTertiary,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
                           ),
-                          onPressed: () => _handleSuffixIconPress(context),
+                          icon: Icon(
+                            TablerIcons.x,
+                            color: _colors.iconSecondary,
+                            size: 20,
+                          ),
+                          onPressed: _handleClear,
                         ),
-                      ],
-                    ),
+                      IconButton(
+                        icon: Icon(
+                          _isDropdownOpen
+                              ? TablerIcons.chevron_up
+                              : TablerIcons.chevron_down,
+                          color: _isDropdownOpen
+                              ? _colors.primary
+                              : _colors.iconTertiary,
+                        ),
+                        onPressed: _handleTogglePress,
+                      ),
+                    ],
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 18,
@@ -389,26 +462,22 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                 ),
               );
             },
-            itemBuilder: widget.itemBuilder,
+            itemBuilder: _buildItem,
             onSelected: (suggestion) {
               if (!mounted) return;
               final previousValue = _selectedValue;
-              setState(() {
-                _selectedValue = suggestion;
-                _isDropdownOpen = false;
-              });
+              setState(() => _selectedValue = suggestion);
               final text = widget.itemAsString(suggestion);
-              _controller.text = text;
-              _controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: text.length),
-              );
               final previousText = previousValue != null
                   ? widget.itemAsString(previousValue)
                   : '';
+              // Leaving the field is what writes the label into the box, so
+              // unfocus first and let the blur handler put the new value in.
+              FocusScope.of(context).unfocus();
+              _setText(text);
               if (previousText != text) {
                 widget.onSuggestionSelected(suggestion, text);
               }
-              FocusScope.of(context).unfocus();
             },
             emptyBuilder: (context) => Padding(
               padding: EdgeInsets.all(20),

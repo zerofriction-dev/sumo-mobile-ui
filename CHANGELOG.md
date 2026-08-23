@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.12.0
+
+- **`ZeroDropdownSearch` now behaves as a search selection.** Opening a field
+  that already held a value used to list only that value: the text box doubled
+  as both the display of the selection and the search query, so the filter ran
+  against the label already in it. The only way out was to press the clear
+  button first — which the ticket reporting this called out as something no one
+  would guess.
+  - Focus now means *search*. Entering the field empties the query, so the
+    whole list shows; leaving it writes the selection back. The selected label
+    stays visible as the placeholder while searching, the way Semantic UI's
+    search selection shows it, so clearing the box never hides what the field
+    holds.
+  - **The value only changes when it is meant to.** Picking an item or pressing
+    clear changes it; typing and walking away no longer does. Previously any
+    text that did not exactly match an item silently reported `null` on blur —
+    a half-typed query was enough to wipe a chosen province, and with it every
+    dependent field downstream.
+  - **The current selection is marked and scrolled to.** The matching row gets
+    a tint and a check, and the list opens at that row rather than at the top,
+    which is the difference between finding your province and scrolling 77 of
+    them. New `ZeroUiColors.dropdownItemSelected` sets the tint.
+  - Items are matched by identity, `==`, *and* label, because the list and the
+    selection routinely come from different fetches of models that define no
+    `==`.
+  - The query no longer comes from the typeahead's debounced pattern, which is
+    a beat behind the text and, on the first open, is still the old label.
+  - The chevron follows the suggestions box instead of a 150 ms timer, so it
+    no longer points the wrong way after the box closes on its own.
+  - The suggestions controller is disposed. It never was.
+- No API change: every existing call site keeps working untouched.
+
 ## 0.11.0
 
 - **`showZeroDatePicker` is now `ZeroDatePicker.show`.** Breaking, and
