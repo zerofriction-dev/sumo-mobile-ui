@@ -22,11 +22,14 @@
     matching row gets a tint and a check, and the list opens on it rather than
     at its own head, which is the difference between finding your province and
     scrolling 77 of them. New `ZeroUiColors.dropdownItemSelected` sets the tint.
-    - An item near the end of the list cannot reach the top on its own — the
-      list runs out first — so the tail is padded by exactly the distance it
-      falls short, and by nothing when it does not. The gap goes as soon as the
-      list is filtered or the box closes, and a list that opens upwards is
-      padded at its own far end.
+    - An item near the end cannot reach the top while the box is taller than
+      what is left below it — the list runs out first. The box shrinks to what
+      remains instead, so the rows fill it exactly and no empty stretch is left
+      under the last one. It returns to full height as soon as the list is
+      filtered or the box closes.
+    - A box that opens upwards is reversed, which puts scroll offset zero at
+      the edge nearest the field — the same edge this scrolls to — so both
+      directions come out of the same arithmetic.
   - Items are matched by identity, `==`, *and* label, because the list and the
     selection routinely come from different fetches of models that define no
     `==`.

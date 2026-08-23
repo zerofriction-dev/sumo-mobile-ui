@@ -78,7 +78,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   bool _isDropdownOpen = false;
   bool _suppressTextChanged = false;
   List<T> _visibleItems = <T>[];
-  double _listTailPad = 0;
+  double? _boxMaxHeight;
 
   static const _boxAnimation = Duration(milliseconds: 200);
 
@@ -169,7 +169,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     if (!mounted) return;
     final isOpen = _suggestionsController.isOpen;
     if (isOpen == _isDropdownOpen) return;
-    if (!isOpen) _listTailPad = 0;
+    if (!isOpen) _boxMaxHeight = null;
     setState(() => _isDropdownOpen = isOpen);
     if (isOpen) _scheduleScrollToSelected();
   }
@@ -203,7 +203,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     .contains(query.toLowerCase()),
               )
               .toList();
-    if (!listEquals(_visibleItems, result)) _listTailPad = 0;
+    if (!listEquals(_visibleItems, result)) _boxMaxHeight = null;
     _visibleItems = result;
     return result;
   }
@@ -239,26 +239,22 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     final position = _scrollController.position;
     if (position.maxScrollExtent <= 0) return;
 
-    // Rows in these lists are uniform, so the laid-out extent of the rows —
-    // everything but the tail padding — divided by the item count stands in
-    // for a per-item height.
+    // Rows in these lists are uniform, so the laid-out extent divided by the
+    // item count stands in for a per-item height. A list that opens upwards is
+    // reversed, which puts offset zero at the edge nearest the field — the
+    // same edge this scrolls to — so the arithmetic is the same either way.
     final itemExtent =
-        (position.maxScrollExtent + position.viewportDimension - _listTailPad) /
+        (position.maxScrollExtent + position.viewportDimension) /
         _visibleItems.length;
+    final target = index * itemExtent;
 
-    // Counting from the far end when the box opens upwards: there the list is
-    // reversed, so scroll offset zero is the row nearest the field.
-    final reversed = _suggestionsController.effectiveDirection ==
-        VerticalDirection.up;
-    final target =
-        (reversed ? _visibleItems.length - 1 - index : index) * itemExtent;
-
-    // An item close to the end cannot reach the top on its own — the list runs
-    // out first. Open up exactly the space it is short of, and no more, so the
-    // gap left behind is never bigger than it has to be.
-    final short = target - position.maxScrollExtent;
-    if (short > 0.5) {
-      setState(() => _listTailPad += short);
+    // An item near the end cannot reach that edge while the box is taller than
+    // what is left below it — the list runs out first. Shrink the box to what
+    // remains rather than padding the list out to meet it: the rows then fill
+    // it exactly, with no empty stretch under the last one.
+    final remaining = (_visibleItems.length - index) * itemExtent;
+    if (remaining < position.viewportDimension - 0.5) {
+      setState(() => _boxMaxHeight = remaining);
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
       return;
     }
@@ -483,23 +479,23 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
               );
             },
             itemBuilder: _buildItem,
-            listBuilder: (context, children) {
-              final reversed =
-                  _suggestionsController.effectiveDirection ==
-                  VerticalDirection.up;
-              return ListView(
+            listBuilder: (context, children) => ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: _boxMaxHeight ?? double.infinity,
+              ),
+              child: ListView(
                 // Deliberately no controller: the list inherits the box's
                 // PrimaryScrollController, which is the one handed in above.
                 controller: null,
                 primary: null,
                 shrinkWrap: true,
-                reverse: reversed,
-                padding: reversed
-                    ? EdgeInsets.only(top: _listTailPad)
-                    : EdgeInsets.only(bottom: _listTailPad),
+                padding: EdgeInsets.zero,
+                reverse:
+                    _suggestionsController.effectiveDirection ==
+                    VerticalDirection.up,
                 children: children,
-              );
-            },
+              ),
+            ),
             onSelected: (suggestion) {
               if (!mounted) return;
               final previousValue = _selectedValue;
