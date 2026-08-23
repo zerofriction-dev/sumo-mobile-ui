@@ -37,6 +37,24 @@
   - The chevron follows the suggestions box instead of a 150 ms timer, so it
     no longer points the wrong way after the box closes on its own.
   - The suggestions controller is disposed. It never was.
+- **The open list stops at 70% of the screen.** Left alone it grows into
+  whatever room is below the field, which on a short form is the whole screen —
+  the field's own neighbours disappear behind it and there is nothing left to
+  orient by. New `maxHeightFactor` sets the share; the cap is applied from
+  inside the list rather than through `TypeAheadField.constraints`, which
+  aligns a shortened box by the direction it was *asked* to open in and so
+  leaves a gap under one that has auto-flipped upwards.
+- **A list that opens upwards now reads the same way round as one that opens
+  down.** The typeahead flips the list over in that case, to put the first row
+  against the field — which left จังหวัด running bottom to top, backwards from
+  the identical field a few pixels higher up the form. The order is now fixed
+  and the selected row goes to the top either way.
+- **The two trailing buttons are the same size and evenly spaced.** The chevron
+  was a stock `IconButton` — a 24px glyph in a 48px box — next to a 20px clear
+  button in a 32px one, so they sat at different weights with an uneven gap and
+  the pair floated away from the border. Both are now 20px in a 28px box, and
+  the chevron clears the border by the same 18px the text is inset on the left.
+
 - **One deliberate departure from Semantic UI.** There, leaving the field with
   a query still typed commits the first match — `forceSelection`. Here it
   restores the previous value instead. On a list of Thai provinces a one-letter

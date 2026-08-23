@@ -38,6 +38,12 @@ class ZeroDropdownSearch<T> extends StatefulWidget {
   final String? errorText;
   final bool isRequired;
 
+  /// How much of the screen height the open list may take up, at most.
+  ///
+  /// Left to itself the list grows into whatever room is left below the field,
+  /// which on a short form means it covers the screen. Defaults to `0.7`.
+  final double maxHeightFactor;
+
   /// Color palette used by the field. Defaults to [ZeroUiColors].
   final ZeroUiColors colors;
 
@@ -61,6 +67,7 @@ class ZeroDropdownSearch<T> extends StatefulWidget {
     this.hasError = false,
     this.errorText,
     this.isRequired = true,
+    this.maxHeightFactor = 0.7,
     this.colors = const ZeroUiColors(),
   });
 
@@ -237,16 +244,14 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     if (position.maxScrollExtent <= 0) return;
 
     // Rows in these lists are uniform, so the laid-out extent divided by the
-    // item count stands in for a per-item height. A list that opens upwards is
-    // reversed, which puts offset zero at the edge nearest the field — the
-    // same edge this scrolls to — so the arithmetic is the same either way.
+    // item count stands in for a per-item height.
     final itemExtent =
         (position.maxScrollExtent + position.viewportDimension) /
         _visibleItems.length;
 
-    // The row goes to the edge nearest the field. An item near the end of the
-    // list only gets as far as the list itself does — the box keeps its height
-    // and the row settles wherever the last screenful leaves it.
+    // The row goes to the top of the list, whichever way the box opened. An
+    // item near the end only gets as far as the list itself does — the box
+    // keeps its height and the row settles where the last screenful leaves it.
     _scrollController.jumpTo(
       (index * itemExtent).clamp(0.0, position.maxScrollExtent),
     );
@@ -308,6 +313,25 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
           TextSpan(text: ' *', style: TextStyle(color: _colors.error)),
         ],
       ),
+    );
+  }
+
+  /// Both trailing buttons are built the same way so they carry the same
+  /// weight and the same gaps — an [IconButton] left to its own devices claims
+  /// a 48px box, which put the two at different sizes and pushed the pair away
+  /// from the border.
+  Widget _suffixButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      iconSize: 20,
+      icon: Icon(icon, color: color),
+      onPressed: onPressed,
     );
   }
 
@@ -392,35 +416,34 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     color: _colors.textPlaceholder,
                   ),
                   prefixIcon: widget.prefixIcon,
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_canClear)
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          icon: Icon(
-                            TablerIcons.x,
+                  suffixIconConstraints: const BoxConstraints(
+                    minWidth: 0,
+                    minHeight: 0,
+                  ),
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 14),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_canClear) ...[
+                          _suffixButton(
+                            icon: TablerIcons.x,
                             color: _colors.iconSecondary,
-                            size: 20,
+                            onPressed: _handleClear,
                           ),
-                          onPressed: _handleClear,
-                        ),
-                      IconButton(
-                        icon: Icon(
-                          _isDropdownOpen
+                          const SizedBox(width: 6),
+                        ],
+                        _suffixButton(
+                          icon: _isDropdownOpen
                               ? TablerIcons.chevron_up
                               : TablerIcons.chevron_down,
                           color: _isDropdownOpen
                               ? _colors.primary
                               : _colors.iconTertiary,
+                          onPressed: _handleTogglePress,
                         ),
-                        onPressed: _handleTogglePress,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 18,
@@ -469,6 +492,29 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
               );
             },
             itemBuilder: _buildItem,
+            // Capping the list from inside keeps the box anchored to the
+            // field. TypeAheadField's own `constraints` aligns the shortened
+            // box by the direction it was *asked* to open in, which is the
+            // wrong end for one that has auto-flipped upwards.
+            listBuilder: (context, children) => ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight:
+                    MediaQuery.sizeOf(context).height * widget.maxHeightFactor,
+              ),
+              // Never reversed. The typeahead flips the list over for a box
+              // that opens upwards, to put the first row against the field —
+              // which leaves an alphabetical list reading bottom to top, the
+              // opposite way round from the same field opening downwards.
+              child: ListView(
+                // Deliberately no controller: the list inherits the box's
+                // PrimaryScrollController, which is the one handed in above.
+                controller: null,
+                primary: null,
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                children: children,
+              ),
+            ),
             onSelected: (suggestion) {
               if (!mounted) return;
               final previousValue = _selectedValue;
