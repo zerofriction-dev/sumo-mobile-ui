@@ -22,11 +22,10 @@
     matching row gets a tint and a check, and the list opens on it rather than
     at its own head, which is the difference between finding your province and
     scrolling 77 of them. New `ZeroUiColors.dropdownItemSelected` sets the tint.
-    - An item near the end cannot reach the top while the box is taller than
-      what is left below it — the list runs out first. The box shrinks to what
-      remains instead, so the rows fill it exactly and no empty stretch is left
-      under the last one. It returns to full height as soon as the list is
-      filtered or the box closes.
+    - An item near the end only gets as far as the list itself does, and settles
+      wherever the last screenful leaves it. The box keeps its height either
+      way — neither padded out nor shrunk to fit, which is what Semantic UI
+      does and what leaves no empty stretch under the last row.
     - A box that opens upwards is reversed, which puts scroll offset zero at
       the edge nearest the field — the same edge this scrolls to — so both
       directions come out of the same arithmetic.
@@ -38,6 +37,12 @@
   - The chevron follows the suggestions box instead of a 150 ms timer, so it
     no longer points the wrong way after the box closes on its own.
   - The suggestions controller is disposed. It never was.
+- **One deliberate departure from Semantic UI.** There, leaving the field with
+  a query still typed commits the first match — `forceSelection`. Here it
+  restores the previous value instead. On a list of Thai provinces a one-letter
+  query is normal, and committing its first match would quietly swap someone's
+  จังหวัด for a different one on the way past, taking the district and postcode
+  with it. Text that matches nothing is discarded either way.
 - No API change: every existing call site keeps working untouched.
 
 ## 0.11.0

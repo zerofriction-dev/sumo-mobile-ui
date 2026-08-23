@@ -78,7 +78,6 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   bool _isDropdownOpen = false;
   bool _suppressTextChanged = false;
   List<T> _visibleItems = <T>[];
-  double? _boxMaxHeight;
 
   static const _boxAnimation = Duration(milliseconds: 200);
 
@@ -169,7 +168,6 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     if (!mounted) return;
     final isOpen = _suggestionsController.isOpen;
     if (isOpen == _isDropdownOpen) return;
-    if (!isOpen) _boxMaxHeight = null;
     setState(() => _isDropdownOpen = isOpen);
     if (isOpen) _scheduleScrollToSelected();
   }
@@ -203,7 +201,6 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     .contains(query.toLowerCase()),
               )
               .toList();
-    if (!listEquals(_visibleItems, result)) _boxMaxHeight = null;
     _visibleItems = result;
     return result;
   }
@@ -246,20 +243,13 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     final itemExtent =
         (position.maxScrollExtent + position.viewportDimension) /
         _visibleItems.length;
-    final target = index * itemExtent;
 
-    // An item near the end cannot reach that edge while the box is taller than
-    // what is left below it — the list runs out first. Shrink the box to what
-    // remains rather than padding the list out to meet it: the rows then fill
-    // it exactly, with no empty stretch under the last one.
-    final remaining = (_visibleItems.length - index) * itemExtent;
-    if (remaining < position.viewportDimension - 0.5) {
-      setState(() => _boxMaxHeight = remaining);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
-      return;
-    }
-
-    _scrollController.jumpTo(target.clamp(0.0, position.maxScrollExtent));
+    // The row goes to the edge nearest the field. An item near the end of the
+    // list only gets as far as the list itself does — the box keeps its height
+    // and the row settles wherever the last screenful leaves it.
+    _scrollController.jumpTo(
+      (index * itemExtent).clamp(0.0, position.maxScrollExtent),
+    );
   }
 
   void _handleClear() {
@@ -479,23 +469,6 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
               );
             },
             itemBuilder: _buildItem,
-            listBuilder: (context, children) => ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: _boxMaxHeight ?? double.infinity,
-              ),
-              child: ListView(
-                // Deliberately no controller: the list inherits the box's
-                // PrimaryScrollController, which is the one handed in above.
-                controller: null,
-                primary: null,
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                reverse:
-                    _suggestionsController.effectiveDirection ==
-                    VerticalDirection.up,
-                children: children,
-              ),
-            ),
             onSelected: (suggestion) {
               if (!mounted) return;
               final previousValue = _selectedValue;
