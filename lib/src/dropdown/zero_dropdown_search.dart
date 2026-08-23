@@ -79,6 +79,8 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   bool _suppressTextChanged = false;
   List<T> _visibleItems = <T>[];
 
+  static const _boxAnimation = Duration(milliseconds: 200);
+
   ZeroUiColors get _colors => widget.colors;
 
   @override
@@ -212,39 +214,37 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     return widget.itemAsString(item) == widget.itemAsString(value);
   }
 
+  /// Runs once the list exists and again once the box has finished opening —
+  /// the viewport grows while it animates, and a row placed against the
+  /// half-open box lands short of where it belongs.
   void _scheduleScrollToSelected() {
     if (_selectedValue == null) return;
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _scrollToSelected(retry: true),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    Future.delayed(_boxAnimation + const Duration(milliseconds: 50), () {
+      _scrollToSelected();
+    });
   }
 
-  void _scrollToSelected({bool retry = false}) {
+  void _scrollToSelected() {
     if (!mounted || _selectedValue == null) return;
-    if (!_scrollController.hasClients) {
-      if (retry) {
-        Future.delayed(
-          const Duration(milliseconds: 120),
-          () => _scrollToSelected(),
-        );
-      }
-      return;
-    }
+    if (!_scrollController.hasClients) return;
+    if (!_suggestionsController.isOpen) return;
 
     final index = _visibleItems.indexWhere(_isSelected);
-    if (index <= 0) return;
+    if (index < 0) return;
 
     final position = _scrollController.position;
     if (position.maxScrollExtent <= 0) return;
 
     // Rows in these lists are uniform, so the laid-out extent divided by the
-    // item count is an accurate stand-in for a per-item height.
+    // item count stands in for a per-item height. Centering the row keeps it
+    // on screen even where that estimate is a row or two out.
     final itemExtent =
         (position.maxScrollExtent + position.viewportDimension) /
         _visibleItems.length;
-    _scrollController.jumpTo(
-      (index * itemExtent).clamp(0.0, position.maxScrollExtent),
-    );
+    final target =
+        index * itemExtent - (position.viewportDimension - itemExtent) / 2;
+    _scrollController.jumpTo(target.clamp(0.0, position.maxScrollExtent));
   }
 
   void _handleClear() {
@@ -348,6 +348,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
             controller: _controller,
             focusNode: _focusNode,
             autoFlipDirection: true,
+            animationDuration: _boxAnimation,
             suggestionsController: _suggestionsController,
             scrollController: _scrollController,
             suggestionsCallback: _localSuggestionsCallback,
