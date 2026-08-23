@@ -78,6 +78,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   bool _isDropdownOpen = false;
   bool _suppressTextChanged = false;
   List<T> _visibleItems = <T>[];
+  double _listTailPad = 0;
 
   static const _boxAnimation = Duration(milliseconds: 200);
 
@@ -168,6 +169,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     if (!mounted) return;
     final isOpen = _suggestionsController.isOpen;
     if (isOpen == _isDropdownOpen) return;
+    if (!isOpen) _listTailPad = 0;
     setState(() => _isDropdownOpen = isOpen);
     if (isOpen) _scheduleScrollToSelected();
   }
@@ -201,6 +203,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
                     .contains(query.toLowerCase()),
               )
               .toList();
+    if (!listEquals(_visibleItems, result)) _listTailPad = 0;
     _visibleItems = result;
     return result;
   }
@@ -216,7 +219,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
 
   /// Runs once the list exists and again once the box has finished opening —
   /// the viewport grows while it animates, and a row placed against the
-  /// half-open box lands short of where it belongs.
+  /// half-open box lands a couple of rows off.
   void _scheduleScrollToSelected() {
     if (_selectedValue == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
@@ -236,14 +239,30 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
     final position = _scrollController.position;
     if (position.maxScrollExtent <= 0) return;
 
-    // Rows in these lists are uniform, so the laid-out extent divided by the
-    // item count stands in for a per-item height. Centering the row keeps it
-    // on screen even where that estimate is a row or two out.
+    // Rows in these lists are uniform, so the laid-out extent of the rows —
+    // everything but the tail padding — divided by the item count stands in
+    // for a per-item height.
     final itemExtent =
-        (position.maxScrollExtent + position.viewportDimension) /
+        (position.maxScrollExtent + position.viewportDimension - _listTailPad) /
         _visibleItems.length;
+
+    // Counting from the far end when the box opens upwards: there the list is
+    // reversed, so scroll offset zero is the row nearest the field.
+    final reversed = _suggestionsController.effectiveDirection ==
+        VerticalDirection.up;
     final target =
-        index * itemExtent - (position.viewportDimension - itemExtent) / 2;
+        (reversed ? _visibleItems.length - 1 - index : index) * itemExtent;
+
+    // An item close to the end cannot reach the top on its own — the list runs
+    // out first. Open up exactly the space it is short of, and no more, so the
+    // gap left behind is never bigger than it has to be.
+    final short = target - position.maxScrollExtent;
+    if (short > 0.5) {
+      setState(() => _listTailPad += short);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+      return;
+    }
+
     _scrollController.jumpTo(target.clamp(0.0, position.maxScrollExtent));
   }
 
@@ -464,6 +483,23 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
               );
             },
             itemBuilder: _buildItem,
+            listBuilder: (context, children) {
+              final reversed =
+                  _suggestionsController.effectiveDirection ==
+                  VerticalDirection.up;
+              return ListView(
+                // Deliberately no controller: the list inherits the box's
+                // PrimaryScrollController, which is the one handed in above.
+                controller: null,
+                primary: null,
+                shrinkWrap: true,
+                reverse: reversed,
+                padding: reversed
+                    ? EdgeInsets.only(top: _listTailPad)
+                    : EdgeInsets.only(bottom: _listTailPad),
+                children: children,
+              );
+            },
             onSelected: (suggestion) {
               if (!mounted) return;
               final previousValue = _selectedValue;

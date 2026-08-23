@@ -18,10 +18,15 @@
     text that did not exactly match an item silently reported `null` on blur —
     a half-typed query was enough to wipe a chosen province, and with it every
     dependent field downstream.
-  - **The current selection is marked and scrolled to.** The matching row gets
-    a tint and a check, and the list opens at that row rather than at the top,
-    which is the difference between finding your province and scrolling 77 of
-    them. New `ZeroUiColors.dropdownItemSelected` sets the tint.
+  - **The current selection is marked and lifted to the top of the list.** The
+    matching row gets a tint and a check, and the list opens on it rather than
+    at its own head, which is the difference between finding your province and
+    scrolling 77 of them. New `ZeroUiColors.dropdownItemSelected` sets the tint.
+    - An item near the end of the list cannot reach the top on its own — the
+      list runs out first — so the tail is padded by exactly the distance it
+      falls short, and by nothing when it does not. The gap goes as soon as the
+      list is filtered or the box closes, and a list that opens upwards is
+      padded at its own far end.
   - Items are matched by identity, `==`, *and* label, because the list and the
     selection routinely come from different fetches of models that define no
     `==`.
