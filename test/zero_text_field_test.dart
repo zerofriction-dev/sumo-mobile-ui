@@ -190,4 +190,34 @@ void main() {
       expect(tester.getRect(find.byType(EditableText)).width, greaterThan(200));
     }
   });
+
+  testWidgets('สลับ controller แล้วช่องต้องผูกกับตัวใหม่ ไม่ค้างตัวเก่า', (
+    tester,
+  ) async {
+    final first = TextEditingController(text: 'อันเก่า');
+    final second = TextEditingController(text: 'อันใหม่');
+    addTearDown(first.dispose);
+    addTearDown(second.dispose);
+
+    Widget build(TextEditingController controller) => MaterialApp(
+      home: Scaffold(
+        body: ZeroTextField(
+          controller: controller,
+          keyboardType: TextInputType.text,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(build(first));
+    expect(find.text('อันเก่า'), findsOneWidget);
+
+    await tester.pumpWidget(build(second));
+    await tester.pumpAndSettle();
+    expect(find.text('อันใหม่'), findsOneWidget);
+    expect(find.text('อันเก่า'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'พิมพ์ทับ');
+    expect(second.text, 'พิมพ์ทับ');
+    expect(first.text, 'อันเก่า');
+  });
 }

@@ -104,6 +104,26 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
     _focusNode.addListener(_handleFocusChanged);
   }
 
+  // State ของ Flutter ถูก reuse เมื่อ widget ตัวใหม่มาแทนที่ตำแหน่งเดิมในทรี
+  // ถ้าไม่ผูก controller ตัวใหม่ ช่องจะยังโชว์/เขียนลง controller ตัวเก่าอยู่
+  // เช่นฟอร์มหลายขั้นที่สลับชุดฟิลด์ ค่าจะไปโผล่ผิดช่อง
+  @override
+  void didUpdateWidget(covariant ZeroTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.readOnly != oldWidget.readOnly) {
+      _focusNode.skipTraversal = widget.readOnly;
+    }
+    if (identical(widget.controller, oldWidget.controller)) return;
+    _controller.removeListener(_handleTextChanged);
+    // ตัวที่สร้างเองเท่านั้นที่เรา dispose ได้ — ของที่ผู้เรียกส่งมาเป็นของเขา
+    if (oldWidget.controller == null) {
+      _controller.dispose();
+    }
+    _controller = widget.controller ?? TextEditingController();
+    _controller.addListener(_handleTextChanged);
+    _hasText = _controller.text.isNotEmpty;
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_handleTextChanged);
