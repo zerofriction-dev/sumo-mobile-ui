@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.13.1
+
+`ZeroTextField` read its `controller` once, in `initState`, and never looked
+again.
+
+- **The field now rebinds when the controller changes.** Flutter reuses a
+  `State` when a new widget lands in the same slot of the tree, so a field that
+  swapped controllers kept showing — and writing to — the old one. A
+  three-step form in the Sumo customer app hit this: step 3 asks for the car's
+  name, but the box came up holding the licence plate typed in step 2, because
+  both steps put a field in the same position. The app worked around it with a
+  `KeyedSubtree` per step; the workaround is no longer needed.
+- **Only a controller the widget made is disposed on the swap.** One passed in
+  by the caller belongs to the caller, exactly as `dispose` already treats it.
+- **`readOnly` now reaches the focus node after the first build.** It was read
+  once to set `skipTraversal` and a later change was ignored.
+
 ## 0.13.0
 
 Three parameters `ZeroDropdownSearch` accepted and then ignored. Two of them
