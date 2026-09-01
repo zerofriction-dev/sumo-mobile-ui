@@ -10,8 +10,11 @@ import '../theme/zero_ui_colors.dart';
 /// [onPressed] callback may be async ([FutureOr]) — a built-in in-flight guard
 /// blocks double taps until it settles (prevents duplicate submits).
 ///
-/// Colors default to [ZeroUiColors] but can be overridden via [colors] or the
-/// per-instance [backgroundColor] / [textColor].
+/// Colors come from [ZeroUiColors.global] unless [colors] is passed, and can
+/// still be overridden per instance with [backgroundColor] / [textColor].
+///
+/// The filled background uses [ZeroUiColors.buttonPrimary] when the palette
+/// defines one and [ZeroUiColors.primary] otherwise.
 class ZeroButton extends StatefulWidget {
   // Content
   final String text;
@@ -46,8 +49,8 @@ class ZeroButton extends StatefulWidget {
   final bool unfocusOnTap;
   final int unfocusDelay;
 
-  /// Color palette. Defaults to [ZeroUiColors].
-  final ZeroUiColors colors;
+  /// Color palette. Falls back to [ZeroUiColors.global] when null.
+  final ZeroUiColors? colors;
 
   const ZeroButton({
     super.key,
@@ -72,7 +75,7 @@ class ZeroButton extends StatefulWidget {
     this.borderColor = Colors.transparent,
     this.unfocusOnTap = true,
     this.unfocusDelay = 0,
-    this.colors = const ZeroUiColors(),
+    this.colors,
   });
 
   @override
@@ -83,7 +86,7 @@ class _ZeroButtonState extends State<ZeroButton> {
   // Synchronous in-flight guard: blocks double-submit when [onPressed] is async.
   bool _inFlight = false;
 
-  ZeroUiColors get _colors => widget.colors;
+  ZeroUiColors get _colors => widget.colors ?? ZeroUiColors.global;
   bool get _isActive =>
       widget.enabled && !widget.isLoading && widget.onPressed != null;
 
@@ -125,7 +128,9 @@ class _ZeroButtonState extends State<ZeroButton> {
       ),
       child: Material(
         color: active
-            ? (widget.backgroundColor ?? _colors.primary)
+            ? (widget.backgroundColor ??
+                _colors.buttonPrimary ??
+                _colors.primary)
             : _colors.buttonDisabled,
         borderRadius: shape,
         child: InkWell(

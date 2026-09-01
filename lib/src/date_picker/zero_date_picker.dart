@@ -31,8 +31,14 @@ abstract final class ZeroDatePicker {
   ///    which year the digits mean.
   ///  * **A day you cannot pick never looks pickable.** Material 2 ships no
   ///    `yearForegroundColor` at all, so out-of-range years render in the same
-  ///    colour as usable ones unless a theme names one. [colors] is resolved into
-  ///    every day/year/today slot, disabled state first.
+  ///    colour as usable ones unless a theme names one. The palette is resolved
+  ///    into every day/year/today slot, disabled state first.
+  ///
+  /// [colors] falls back to [ZeroUiColors.global] when omitted. The two filled
+  /// surfaces — the header band and the selected day/year cell, both of which
+  /// carry `textInverse` content — use [ZeroUiColors.buttonPrimary] when the
+  /// palette defines one; every ink slot (confirm/cancel labels, today's
+  /// outline and label) stays on [ZeroUiColors.primary].
   ///  * **The bounds cannot crash the dialog.** [showDatePicker] asserts that the
   ///    initial date sits inside the range; [initialDate] is clamped into
   ///    [firstDate]–[lastDate] instead of being trusted.
@@ -51,7 +57,7 @@ abstract final class ZeroDatePicker {
     required DateTime lastDate,
     DateTime? initialDate,
     ZeroCalendarEra era = ZeroCalendarEra.buddhist,
-    ZeroUiColors colors = const ZeroUiColors(),
+    ZeroUiColors? colors,
     Color backgroundColor = Colors.white,
     String helpText = 'เลือกวันที่',
     String confirmText = 'ตกลง',
@@ -59,6 +65,8 @@ abstract final class ZeroDatePicker {
     Locale? locale,
   }) {
     FocusManager.instance.primaryFocus?.unfocus();
+
+    final ZeroUiColors palette = colors ?? ZeroUiColors.global;
 
     final DateTime first = DateUtils.dateOnly(firstDate);
     // A caller that hands over an inverted range gets a single pickable day
@@ -87,14 +95,14 @@ abstract final class ZeroDatePicker {
       builder: (BuildContext context, Widget? child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.light(
-            primary: colors.primary,
-            onPrimary: colors.textInverse,
+            primary: palette.primary,
+            onPrimary: palette.textInverse,
             surface: backgroundColor,
-            onSurface: colors.textPrimary,
+            onSurface: palette.textPrimary,
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
-              foregroundColor: colors.primary,
+              foregroundColor: palette.primary,
               // Derived from the ambient text theme rather than written from
               // scratch: a button's resolved textStyle REPLACES the default
               // text style (button_style_button.dart passes it straight to
@@ -106,7 +114,7 @@ abstract final class ZeroDatePicker {
                       .copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-          datePickerTheme: _themeFrom(colors, backgroundColor),
+          datePickerTheme: _themeFrom(palette, backgroundColor),
         ),
         child: child!,
       ),
@@ -120,10 +128,16 @@ DateTime _clamp(DateTime date, DateTime? first, DateTime? last) {
   return date;
 }
 
+/// The colour of the dialog's two filled surfaces — the header band and the
+/// selected cell. Both are solid blocks carrying `textInverse` on top, so they
+/// follow the palette's fill slot; everything else the dialog paints in the
+/// accent colour is ink on the dialog's own background and stays on `primary`.
+Color _fill(ZeroUiColors colors) => colors.buttonPrimary ?? colors.primary;
+
 DatePickerThemeData _themeFrom(ZeroUiColors colors, Color backgroundColor) {
   return DatePickerThemeData(
     backgroundColor: backgroundColor,
-    headerBackgroundColor: colors.primary,
+    headerBackgroundColor: _fill(colors),
     headerForegroundColor: colors.textInverse,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     cancelButtonStyle: ButtonStyle(
@@ -179,7 +193,7 @@ WidgetStateProperty<Color?> _foreground(ZeroUiColors colors, Color enabled) {
 WidgetStateProperty<Color?> _background(ZeroUiColors colors) {
   return WidgetStateProperty.resolveWith((Set<WidgetState> states) {
     if (states.contains(WidgetState.disabled)) return Colors.transparent;
-    if (states.contains(WidgetState.selected)) return colors.primary;
+    if (states.contains(WidgetState.selected)) return _fill(colors);
     return Colors.transparent;
   });
 }
