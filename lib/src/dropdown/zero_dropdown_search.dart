@@ -17,8 +17,7 @@ import '../theme/zero_ui_colors.dart';
 /// previous selection — the value only changes when an item is picked or the
 /// clear button is pressed.
 ///
-/// Colors come from [ZeroUiColors.global] unless a custom palette is passed
-/// via [colors].
+/// Colors default to [ZeroUiColors] but can be fully overridden via [colors].
 class ZeroDropdownSearch<T> extends StatefulWidget {
   final FutureOr<List<T>> Function(String) suggestionsCallback;
   final void Function(T?, String) onSuggestionSelected;
@@ -53,9 +52,8 @@ class ZeroDropdownSearch<T> extends StatefulWidget {
   /// which on a short form means it covers the screen. Defaults to `0.7`.
   final double maxHeightFactor;
 
-  /// Color palette used by the field. Falls back to [ZeroUiColors.global]
-  /// when null.
-  final ZeroUiColors? colors;
+  /// Color palette used by the field. Defaults to [ZeroUiColors].
+  final ZeroUiColors colors;
 
   const ZeroDropdownSearch({
     super.key,
@@ -78,7 +76,7 @@ class ZeroDropdownSearch<T> extends StatefulWidget {
     this.errorText,
     this.isRequired = true,
     this.maxHeightFactor = 0.7,
-    this.colors,
+    this.colors = const ZeroUiColors(),
   });
 
   @override
@@ -107,7 +105,7 @@ class _ZeroDropdownSearchState<T> extends State<ZeroDropdownSearch<T>> {
   static const _suffixLead = 8.0;
   static const _suffixTrail = 14.0;
 
-  ZeroUiColors get _colors => widget.colors ?? ZeroUiColors.global;
+  ZeroUiColors get _colors => widget.colors;
 
   @override
   void initState() {

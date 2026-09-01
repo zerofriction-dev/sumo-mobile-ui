@@ -1,38 +1,5 @@
 # Changelog
 
-## 0.14.0
-
-Every widget in the package read its palette from a per-widget default, so an
-app that wanted its own colours had to say so at all ~150 call sites. Two files
-in the Sumo customer app did; the rest of the app rendered the package
-defaults, and the auth screens ended up visibly darker than everything around
-them.
-
-- **New `ZeroUiColors.global`, set once before `runApp`.** Every widget that is
-  given no `colors:` now falls back to it, so an app names its palette in one
-  place and the whole package follows. It is a plain static, not a listenable:
-  assigning to it notifies nothing and rebuilds nothing, so screens already
-  built keep the palette they were built with. It is for boot, not for
-  switching themes at runtime.
-- **`colors:` is now nullable on all six widgets** (`ZeroButton`,
-  `ZeroTextField`, `ZeroDropdownSearch`, `ZeroCheckbox`,
-  `ZeroPickSourceSheet`/`showZeroPickSourceSheet`, `ZeroDatePicker.show`) and
-  resolves to the global when omitted. A call site that already passes a
-  palette keeps winning over the global, and an app that never sets the global
-  renders exactly what it rendered in 0.13.1 — the defaults are untouched, so
-  provider and company can bump to this version and see nothing change.
-- **New `buttonPrimary` slot separates a fill from an ink.** `primary` was
-  doing both jobs: the button's background *and* the focused border, cursor,
-  required `*` and dropdown check drawn on white. A design system that picks a
-  lighter red for filled areas and a darker one for marks on white could not
-  express that. `buttonPrimary` is null by default, and while it is null every
-  affected surface uses `primary` exactly as before. It drives the four solid
-  areas that carry `textInverse` content — the button background, the checked
-  checkbox, and the date picker's header band and selected day/year cell.
-  Ink stays on `primary`: focused label and border, cursor, required `*`,
-  dropdown check and chevron, the pick sheet's option icons, today's outline
-  and the picker's confirm/cancel labels.
-
 ## 0.13.1
 
 `ZeroTextField` read its `controller` once, in `initState`, and never looked
