@@ -6,8 +6,8 @@ import '../theme/zero_ui_colors.dart';
 /// A reusable, themeable text field with a floating label, an optional required
 /// marker, a built-in clear button, and an externally controlled error state.
 ///
-/// Colors default to [ZeroUiColors] but can be fully overridden by passing a
-/// custom palette via [colors].
+/// Colors come from [ZeroUiColors.global] unless a custom palette is passed
+/// via [colors].
 class ZeroTextField extends StatefulWidget {
   final TextEditingController? controller;
   final TextInputType keyboardType;
@@ -40,8 +40,9 @@ class ZeroTextField extends StatefulWidget {
   final bool isRequired;
   final Function(bool isEmpty)? onEmptyChanged;
 
-  /// Color palette used by the field. Defaults to [ZeroUiColors].
-  final ZeroUiColors colors;
+  /// Color palette used by the field. Falls back to [ZeroUiColors.global]
+  /// when null.
+  final ZeroUiColors? colors;
 
   const ZeroTextField({
     super.key,
@@ -75,7 +76,7 @@ class ZeroTextField extends StatefulWidget {
     this.showClearButton = true,
     this.isRequired = true,
     this.onEmptyChanged,
-    this.colors = const ZeroUiColors(),
+    this.colors,
   });
 
   @override
@@ -88,7 +89,7 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
   bool _hasText = false;
   bool _isFocused = false;
 
-  ZeroUiColors get _colors => widget.colors;
+  ZeroUiColors get _colors => widget.colors ?? ZeroUiColors.global;
 
   @override
   void initState() {

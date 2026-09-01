@@ -115,7 +115,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
     this.title = 'อัปโหลดรูปภาพ',
     this.subtitle,
     this.cancelText = 'ยกเลิก',
-    this.colors = const ZeroUiColors(),
+    this.colors,
   }) : assert(options.length > 0, 'ต้องมีอย่างน้อย 1 ตัวเลือก');
 
   final List<ZeroPickSourceOption> options;
@@ -127,10 +127,15 @@ class ZeroPickSourceSheet extends StatelessWidget {
   /// Hide the cancel group entirely by passing an empty string.
   final String cancelText;
 
-  final ZeroUiColors colors;
+  /// Color palette used by the sheet. Falls back to [ZeroUiColors.global]
+  /// when null.
+  final ZeroUiColors? colors;
+
+  ZeroUiColors get _colors => colors ?? ZeroUiColors.global;
 
   @override
   Widget build(BuildContext context) {
+    final ZeroUiColors palette = _colors;
     return SafeArea(
       top: false,
       child: Padding(
@@ -144,7 +149,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: colors.inputBorder,
+                  color: palette.inputBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -155,7 +160,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: colors.textPrimary,
+                color: palette.textPrimary,
               ),
             ),
             if (subtitle != null && subtitle!.isNotEmpty) ...[
@@ -165,7 +170,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: colors.textSecondary,
+                  color: palette.textSecondary,
                 ),
               ),
             ],
@@ -180,8 +185,8 @@ class ZeroPickSourceSheet extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       for (int i = 0; i < options.length; i++) ...[
-                        if (i > 0) _Divider(colors: colors),
-                        _OptionRow(option: options[i], colors: colors),
+                        if (i > 0) _Divider(colors: palette),
+                        _OptionRow(option: options[i], colors: palette),
                       ],
                     ],
                   ),
@@ -194,7 +199,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
                 color: Colors.white,
                 clipBehavior: Clip.antiAlias,
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(color: colors.inputBorder, width: 1.5),
+                  side: BorderSide(color: palette.inputBorder, width: 1.5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: InkWell(
@@ -207,7 +212,7 @@ class ZeroPickSourceSheet extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
+                          color: palette.textPrimary,
                         ),
                       ),
                     ),
@@ -319,7 +324,7 @@ Future<T?> showZeroPickSourceSheet<T>(
   String title = 'อัปโหลดรูปภาพ',
   String? subtitle,
   String cancelText = 'ยกเลิก',
-  ZeroUiColors colors = const ZeroUiColors(),
+  ZeroUiColors? colors,
 }) {
   return showModalBottomSheet<T>(
     context: context,

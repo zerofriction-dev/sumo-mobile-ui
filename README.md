@@ -19,8 +19,9 @@ Widgets:
   (`ZeroCalendarEra.gregorian` to opt out), with out-of-range days and years
   greyed out and `initialDate` clamped into the range.
 
-All default to the original Sumo look via **`ZeroUiColors`**; override any color
-per widget with `colors:`.
+All default to the original Sumo look via **`ZeroUiColors`**; point the whole
+package at your app's palette with `ZeroUiColors.global`, or override a single
+widget with `colors:`.
 
 ## Install (Git dependency)
 
@@ -74,6 +75,28 @@ ZeroDropdownSearch<Province>(
 
 ## Theming
 
+Set the palette once, before `runApp`, and every widget follows it:
+
+```dart
+void main() {
+  ZeroUiColors.global = const ZeroUiColors(
+    primary: AppColors.primaryInk,        // focused border, cursor, required *
+    buttonPrimary: AppColors.primaryFill, // button background, checked checkbox
+    inputBorderFocused: AppColors.primaryInk,
+  );
+  runApp(const MyApp());
+}
+```
+
+`ZeroUiColors.global` is a **plain static, not a listenable**: assigning to it
+notifies nothing and rebuilds nothing, so widgets already on screen keep the
+palette they were built with. Set it at boot; it is not a runtime theme switch.
+Left alone it is `const ZeroUiColors()`, so an app that never touches it renders
+exactly the package defaults.
+
+A `colors:` passed to a widget still wins over the global, for the one screen
+that needs to differ:
+
 ```dart
 const blue = ZeroUiColors(primary: Colors.blue, inputBorderFocused: Colors.blue);
 
@@ -82,6 +105,20 @@ ZeroDropdownSearch<Province>(colors: blue, ...);   // same palette, every widget
 ```
 
 `ZeroUiColors` exposes `copyWith` to derive from the defaults.
+
+### `primary` vs `buttonPrimary`
+
+`primary` is the **ink**: focused label and border, cursor, the required `*`,
+the dropdown's check and chevron, the pick sheet's option icons, today's outline
+and the date picker's confirm/cancel labels — all drawn on a light background.
+
+`buttonPrimary` is the **fill**: the four solid areas that carry `textInverse`
+content on top — the button background, the checked checkbox, and the date
+picker's header band and selected day/year cell.
+
+It is null by default, and while it is null those surfaces use `primary`, which
+is what the package has always done. Set it only if the design system picks a
+different shade to fill with than to ink with.
 
 ## Adding a new widget to this package
 

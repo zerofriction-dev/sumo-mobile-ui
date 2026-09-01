@@ -17,8 +17,9 @@ import '../theme/zero_ui_colors.dart';
 /// renders identically regardless of the host app's `uses-material-design`
 /// setting.
 ///
-/// Colors default to [ZeroUiColors] but can be overridden wholesale via [colors]
-/// or per instance via [activeColor] / [checkColor] / [borderColor].
+/// Colors come from [ZeroUiColors.global] unless [colors] is passed, and can
+/// still be overridden per instance via [activeColor] / [checkColor] /
+/// [borderColor].
 ///
 /// ```dart
 /// ZeroCheckbox(
@@ -67,7 +68,8 @@ class ZeroCheckbox extends StatelessWidget {
   /// Optional padding around the whole control, useful to enlarge the tap area.
   final EdgeInsetsGeometry? padding;
 
-  /// Fill color when checked. Defaults to [ZeroUiColors.primary].
+  /// Fill color when checked. Defaults to [ZeroUiColors.buttonPrimary], or
+  /// [ZeroUiColors.primary] when the palette leaves that slot null.
   final Color? activeColor;
 
   /// Check-mark color. Defaults to [ZeroUiColors.textInverse].
@@ -82,8 +84,9 @@ class ZeroCheckbox extends StatelessWidget {
   /// an empty list to render no shadow.
   final List<BoxShadow>? checkedShadow;
 
-  /// Color palette used by the checkbox. Defaults to [ZeroUiColors].
-  final ZeroUiColors colors;
+  /// Color palette used by the checkbox. Falls back to [ZeroUiColors.global]
+  /// when null.
+  final ZeroUiColors? colors;
 
   const ZeroCheckbox({
     super.key,
@@ -102,8 +105,10 @@ class ZeroCheckbox extends StatelessWidget {
     this.checkColor,
     this.borderColor,
     this.checkedShadow,
-    this.colors = const ZeroUiColors(),
+    this.colors,
   });
+
+  ZeroUiColors get _colors => colors ?? ZeroUiColors.global;
 
   bool get _isEnabled => enabled && onChanged != null;
 
@@ -118,15 +123,18 @@ class ZeroCheckbox extends StatelessWidget {
       );
 
   Widget _buildBox() {
-    final activeFill = activeColor ?? colors.primary;
+    final palette = _colors;
+    // The checked box is a solid, tappable area of colour carrying the check
+    // mark on top, so it follows the fill slot rather than the ink one.
+    final activeFill = activeColor ?? palette.buttonPrimary ?? palette.primary;
     final Color fill;
     final Color border;
-    final Color mark = checkColor ?? colors.textInverse;
+    final Color mark = checkColor ?? palette.textInverse;
     List<BoxShadow>? shadow;
 
     if (!_isEnabled) {
-      fill = value ? colors.buttonDisabled : Colors.transparent;
-      border = colors.buttonDisabled;
+      fill = value ? palette.buttonDisabled : Colors.transparent;
+      border = palette.buttonDisabled;
     } else if (value) {
       fill = activeFill;
       border = activeFill;
@@ -141,8 +149,8 @@ class ZeroCheckbox extends StatelessWidget {
     } else {
       fill = Colors.transparent;
       border = hasError
-          ? colors.inputBorderError
-          : (borderColor ?? colors.iconTertiary);
+          ? palette.inputBorderError
+          : (borderColor ?? palette.iconTertiary);
     }
 
     return AnimatedContainer(
@@ -163,7 +171,7 @@ class ZeroCheckbox extends StatelessWidget {
         child: CustomPaint(
           size: Size.square(size),
           painter: _ZeroCheckPainter(
-            color: _isEnabled ? mark : colors.textDisabled,
+            color: _isEnabled ? mark : palette.textDisabled,
             strokeWidth: size * 0.12,
           ),
         ),
@@ -177,7 +185,7 @@ class ZeroCheckbox extends StatelessWidget {
           fontSize: 14,
           height: 1.3,
           fontWeight: FontWeight.w500,
-          color: _isEnabled ? colors.textPrimary : colors.textDisabled,
+          color: _isEnabled ? _colors.textPrimary : _colors.textDisabled,
         ),
       );
 
