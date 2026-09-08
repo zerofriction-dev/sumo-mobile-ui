@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.13.2
+
+`ZeroCheckbox` documented `padding` as the way to enlarge its tap area, and then
+applied it outside the widget that carries the gesture.
+
+- **The padded band now takes taps.** It was dead space: the padding wrapped the
+  tap target instead of sitting inside it, so a checkbox given padding grew on
+  screen and stayed exactly as hard to hit — a 20pt box padded out to a 48pt
+  band answered only in the middle 20pt, under both the Material 48pt and the
+  iOS 44pt minimum.
+- **No screen changes behaviour from this release alone.** The parameter was
+  inert and is now live; nothing in the three Sumo apps passes it, so nothing
+  gets a bigger tap target until a call site does. The app banner opt-out row —
+  the case that surfaced this — is *not* fixed here: company and super-app
+  already wrap their row in an `InkWell`, so their whole 48pt band toggled
+  before this change and is untouched by it, while provider has no `InkWell`
+  and builds its band as a `Padding` widget of its own wrapped around the
+  checkbox. A caller's own `Padding` is still outside the tap target, so
+  provider's band was dead before and stays dead after. Handing that inset to
+  the `padding` parameter is what would fix it, and that is a change in
+  provider, not in this package.
+- **With `labelWidget` the padding surrounds the box alone.** Only the box
+  toggles in that arrangement, deliberately, so a custom label keeps its own
+  gestures; padding the whole row into one tap target would have quietly made
+  every such label toggle the box. The padding follows the tap target rather
+  than the other way round, so it enlarges what actually responds. Visible
+  consequence for a `labelWidget` caller that passes `padding`: the label now
+  sits a right-inset further out, and the control is no longer padded past the
+  label, so it can measure smaller than it did in 0.13.1.
+- **A disabled checkbox no longer swallows taps.** The gesture detector was
+  opaque whether or not it had anything to do, so a disabled checkbox absorbed
+  every pointer that landed on it and hid whatever sat behind — across the
+  whole band, now that the padding is inside it. Disabled, it defers to its
+  child instead.
+
 ## 0.13.1
 
 `ZeroTextField` read its `controller` once, in `initState`, and never looked

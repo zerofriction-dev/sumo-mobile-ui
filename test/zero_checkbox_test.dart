@@ -126,4 +126,146 @@ void main() {
     ));
     expect(find.byType(ZeroCheckbox), findsOneWidget);
   });
+
+  testWidgets('padding is part of the tap target: a tap in the band toggles '
+      '(box only)', (tester) async {
+    bool? next;
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (v) => next = v,
+        size: 22,
+        padding: const EdgeInsets.all(20),
+      ),
+    ));
+
+    final control = tester.getRect(find.byType(ZeroCheckbox));
+    final box = tester.getRect(find.byType(AnimatedContainer));
+    expect(control.size, const Size(62, 62)); // padding still lays out
+
+    final spot = control.topLeft + const Offset(6, 6);
+    expect(box.contains(spot), isFalse); // the spot is band, not box
+
+    await tester.tapAt(spot);
+    await tester.pump();
+    expect(next, true);
+  });
+
+  testWidgets('padding is part of the tap target: a tap in the band toggles '
+      '(plain-text label)', (tester) async {
+    bool? next;
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (v) => next = v,
+        label: 'Terms',
+        size: 22,
+        padding: const EdgeInsets.all(20),
+      ),
+    ));
+
+    final control = tester.getRect(find.byType(ZeroCheckbox));
+    final box = tester.getRect(find.byType(AnimatedContainer));
+    final label = tester.getRect(find.text('Terms'));
+
+    final spot = control.topLeft + const Offset(6, 6);
+    expect(box.contains(spot), isFalse);
+    expect(label.contains(spot), isFalse);
+
+    await tester.tapAt(spot);
+    await tester.pump();
+    expect(next, true);
+  });
+
+  testWidgets('labelWidget: padding enlarges the box tap target only — the gap '
+      'beside it and the label itself still do not toggle', (tester) async {
+    var toggles = 0;
+    var linkTaps = 0;
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (_) => toggles++,
+        size: 22,
+        gap: 10,
+        padding: const EdgeInsets.all(20),
+        labelWidget: GestureDetector(
+          onTap: () => linkTaps++,
+          child: const Text('Policy link'),
+        ),
+      ),
+    ));
+
+    final box = tester.getRect(find.byType(AnimatedContainer));
+    final label = tester.getRect(find.text('Policy link'));
+
+    // the band around the box belongs to the box's tap target
+    await tester.tapAt(box.topLeft - const Offset(6, 6));
+    await tester.pump();
+    expect(toggles, 1);
+
+    // the gap between the padded box and the label does not
+    await tester.tapAt(Offset(label.left - 5, label.center.dy));
+    await tester.pump();
+    expect(toggles, 1);
+
+    // and the custom label still owns its own gestures
+    await tester.tap(find.text('Policy link'));
+    await tester.pump();
+    expect(linkTaps, 1);
+    expect(toggles, 1);
+  });
+
+  testWidgets('labelWidget: the padding surrounds the box, not the whole '
+      'control', (tester) async {
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (_) {},
+        size: 22,
+        gap: 10,
+        padding: const EdgeInsets.all(20),
+        labelWidget: const SizedBox(key: Key('label'), width: 100, height: 80),
+      ),
+    ));
+
+    final control = tester.getRect(find.byType(ZeroCheckbox));
+    final box = tester.getRect(find.byType(AnimatedContainer));
+    final label = tester.getRect(find.byKey(const Key('label')));
+
+    // 20 + 22 + 20 padded box, then the 10pt gap, then the 100pt label. The
+    // control is as tall as the label rather than as the label plus the
+    // padding: padded around everything, as in 0.13.1, this would be 172 x 120.
+    expect(control.size, const Size(172, 80));
+    expect(box.left - control.left, 20); // leading padding, on the box
+    expect(label.left - box.right, 30); // the box's own inset, then the gap
+    expect(control.right, label.right); // and nothing padded past the label
+  });
+
+  testWidgets('disabled: the padded band does not swallow taps meant for what '
+      'is behind it', (tester) async {
+    var behindTaps = 0;
+    await tester.pumpWidget(wrap(
+      Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => behindTaps++,
+            ),
+          ),
+          const ZeroCheckbox(
+            value: false,
+            onChanged: null,
+            size: 22,
+            padding: EdgeInsets.all(20),
+          ),
+        ],
+      ),
+    ));
+
+    final box = tester.getRect(find.byType(AnimatedContainer));
+    await tester.tapAt(box.topLeft - const Offset(6, 6)); // in the band
+    await tester.pump();
+    expect(behindTaps, 1);
+  });
 }

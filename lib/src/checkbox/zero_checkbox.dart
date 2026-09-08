@@ -11,7 +11,7 @@ import '../theme/zero_ui_colors.dart';
 /// Tapping the box toggles the value. When [label] (a plain string) is used the
 /// label toggles too; when a custom [labelWidget] is supplied instead — e.g. a
 /// rich label containing tappable links — only the box toggles, so the widget
-/// keeps its own gestures.
+/// keeps its own gestures. [padding] enlarges whichever of those is tappable.
 ///
 /// The check mark is drawn with a [CustomPainter] (not an icon font), so it
 /// renders identically regardless of the host app's `uses-material-design`
@@ -64,7 +64,16 @@ class ZeroCheckbox extends StatelessWidget {
   /// Cross-axis alignment of the box against a (possibly multi-line) label.
   final CrossAxisAlignment alignment;
 
-  /// Optional padding around the whole control, useful to enlarge the tap area.
+  /// Optional padding, applied *inside* the tap target so the padded band is
+  /// live hit area rather than dead space around the control.
+  ///
+  /// With [label], or with no label at all, the whole control is tappable and
+  /// the padding surrounds all of it. With [labelWidget] only the box is
+  /// tappable (see above), so the padding surrounds the box alone: it enlarges
+  /// the box's tap target and leaves the custom label untouched.
+  ///
+  /// A disabled checkbox has no tap target to enlarge: the padded band lays out
+  /// the same but takes no pointers, and taps reach whatever sits behind it.
   final EdgeInsetsGeometry? padding;
 
   /// Fill color when checked. Defaults to [ZeroUiColors.primary].
@@ -111,11 +120,30 @@ class ZeroCheckbox extends StatelessWidget {
     if (_isEnabled) onChanged!(!value);
   }
 
-  Widget _tappable(Widget child) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _isEnabled ? _toggle : null,
-        child: child,
-      );
+  /// Builds the tap target around [child].
+  ///
+  /// [padding] is applied here, inside the detector — padded outside it, the
+  /// band would make the control bigger without making it any easier to hit.
+  ///
+  /// The detector is only [HitTestBehavior.opaque] while there is something to
+  /// tap. Opacity manufactures a hit target out of the detector's whole
+  /// rectangle, which is what makes the padded band answer; with no [onTap] to
+  /// answer with, that rectangle would merely swallow pointers meant for
+  /// whatever sits behind the disabled control — over the full padded band, now
+  /// that the padding is inside it. Disabled, the detector claims nothing of
+  /// its own and defers to its child.
+  Widget _tappable(Widget child) {
+    Widget target = child;
+    if (padding != null) {
+      target = Padding(padding: padding!, child: target);
+    }
+    return GestureDetector(
+      behavior:
+          _isEnabled ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+      onTap: _isEnabled ? _toggle : null,
+      child: target,
+    );
+  }
 
   Widget _buildBox() {
     final activeFill = activeColor ?? colors.primary;
@@ -211,15 +239,7 @@ class ZeroCheckbox extends StatelessWidget {
       content = _tappable(_buildBox());
     }
 
-    Widget result = Semantics(
-      checked: value,
-      enabled: _isEnabled,
-      child: content,
-    );
-    if (padding != null) {
-      result = Padding(padding: padding!, child: result);
-    }
-    return result;
+    return Semantics(checked: value, enabled: _isEnabled, child: content);
   }
 }
 
