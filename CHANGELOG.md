@@ -1,5 +1,58 @@
 # Changelog
 
+## 0.13.4
+
+`ZeroCheckbox` styled its plain-text `label` from a hardcoded `TextStyle` and
+offered no way past it. The only escape was `labelWidget`, which is box-only by
+design — so a caller who wanted nothing more than a different label color had to
+give up having the whole row toggle.
+
+- **`labelStyle` restyles the label and keeps the row tappable.** Two of the
+  three apps already style this label themselves and want the whole row live:
+  company's app-banner opt-out row (`TextThemes.detail` in `textSecondary`, at
+  `w600`) and super-app's (14 / `w500` in `textCaption`). Both had to choose
+  between the style and the target; neither has to now. Those call sites are
+  where the parameter goes next — nothing in the three apps passes it yet, so
+  this release changes no screen on its own.
+- **It merges onto the built-in style rather than replacing it.** The label is
+  still 14 / 1.3 / `w500` in `textPrimary` except where the override names
+  something else, so a caller that only wants a heavier weight sets the weight
+  and keeps the rest instead of restating the style to hold it still. Replacing
+  would have made the built-in style meaningless the moment anyone passed
+  anything, and would have handed every partial override an accidental
+  regression — the line height above all, which no call site would think to
+  restate and which falls back to the theme's when dropped. A caller that
+  genuinely wants the built-in style gone passes `inherit: false`, the same way
+  it opts out of a merge anywhere else in Flutter.
+- **A disabled label still reads as disabled.** The disabled color is applied
+  *after* the merge, so a label colored by `labelStyle` still turns
+  `textDisabled` under `enabled: false` or a null `onChanged` — an override is a
+  way to restyle a control, not a way to make a dead one look live, and both
+  call sites this parameter exists for set a color. Everything else in the
+  override survives into the disabled state, and a call site that needs a
+  different disabled color changes `ZeroUiColors.textDisabled` on the palette,
+  where the check mark follows it too. This holds through `inherit: false` as
+  well: the replacement is still not allowed to look enabled.
+- **It composes *over* the inherited `DefaultTextStyle`, not instead of it.**
+  0.13.3 re-established the call site's style beneath the `Material` the ripple
+  needs, and this stacks on top of that rather than short-circuiting it: three
+  layers, weakest first — inherited, built-in, `labelStyle`. So an override that
+  names a color and a weight recolors the label without taking the app's font
+  family away from it, which is the whole reason the inherited style was
+  preserved in the first place.
+- **Nothing moves for a caller that passes nothing.** With `labelStyle: null`
+  the label is drawn with the built-in style itself, unmerged and field for
+  field identical to 0.13.3 — pinned by comparing the whole style as one value,
+  not field by field. Everything 0.13.2 and 0.13.3 established is unchanged and
+  still tested: padding inside the tap target, `labelWidget` toggling from the
+  box alone, a disabled control building no ink well and swallowing no taps, the
+  radial reaction a bare box answers with, the preserved `DefaultTextStyle`, and
+  the silence on tap.
+- **`labelWidget` is untouched.** It takes precedence over `label` and takes the
+  style meant for the label with it: that caller builds its own label and styles
+  it there, so a `labelStyle` reaching in would only fight the widget it was
+  given.
+
 ## 0.13.3
 
 `ZeroCheckbox` was the one control in this package that answered a press with

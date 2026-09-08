@@ -21,6 +21,16 @@ void main() {
         ),
       );
 
+  // The style a label actually renders with: what its Text asked for, merged
+  // onto everything it inherited on the way down the tree.
+  TextStyle renderedStyle(WidgetTester tester, String text) => (tester
+          .widget<RichText>(find.descendant(
+            of: find.text(text),
+            matching: find.byType(RichText),
+          ))
+          .text as TextSpan)
+      .style!;
+
   // A palette color no other part of the checkbox paints, so ink is the only
   // thing green can come from.
   const overlay = Color(0xFF00FF00);
@@ -668,6 +678,212 @@ void main() {
     // ...while the label's own style still wins wherever it sets one.
     expect(span.style!.fontSize, 14);
     expect(span.style!.fontWeight, FontWeight.w500);
+  });
+
+  testWidgets('no labelStyle renders the built-in label style, unchanged',
+      (tester) async {
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(value: false, onChanged: (_) {}, label: 'Accept'),
+    ));
+
+    // The whole style the label asks for, compared as one value: a caller that
+    // passes no labelStyle must get the style 0.13.3 hardcoded, field for
+    // field, not something merged that happens to agree on the fields a test
+    // thought to name.
+    expect(
+      tester.widget<Text>(find.text('Accept')).style,
+      const TextStyle(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+        color: Color(0xFF28282B), // ZeroUiColors.textPrimary
+      ),
+    );
+  });
+
+  testWidgets('labelStyle merges onto the built-in style rather than replacing '
+      'it', (tester) async {
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (_) {},
+        label: 'Accept',
+        // company's app-banner opt-out row: a color and a weight, nothing else.
+        labelStyle: const TextStyle(
+          color: Color(0xFF595959),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ));
+
+    final TextStyle style = renderedStyle(tester, 'Accept');
+    expect(style.color, const Color(0xFF595959));
+    expect(style.fontWeight, FontWeight.w600);
+    // ...and everything the override did not mention is still the built-in
+    // style's, which is the whole point of merging: an override names what it
+    // wants changed instead of restating the style to hold the rest still.
+    expect(style.fontSize, 14);
+    expect(style.height, 1.3);
+  });
+
+  testWidgets('a disabled label reads disabled however labelStyle colors it',
+      (tester) async {
+    await tester.pumpWidget(wrap(
+      const ZeroCheckbox(
+        value: false,
+        onChanged: null,
+        label: 'Accept',
+        labelStyle: TextStyle(
+          color: Color(0xFF595959),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ));
+
+    // The disabled color is applied after the merge, so an override cannot
+    // paint a dead control in a live color — while the rest of the override,
+    // which says nothing about being live, survives into the disabled state.
+    var style = renderedStyle(tester, 'Accept');
+    expect(style.color, const Color(0xFFBDBDBD)); // ZeroUiColors.textDisabled
+    expect(style.fontWeight, FontWeight.w600);
+
+    // `enabled: false` is the same state by the other route, and the palette
+    // is where a call site that wants a different disabled color changes it.
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        enabled: false,
+        onChanged: (_) {},
+        label: 'Accept',
+        labelStyle: const TextStyle(color: Color(0xFF595959)),
+        colors: const ZeroUiColors(textDisabled: Color(0xFF00FF00)),
+      ),
+    ));
+    style = renderedStyle(tester, 'Accept');
+    expect(style.color, const Color(0xFF00FF00));
+  });
+
+  testWidgets('labelStyle composes over the inherited style, not instead of it',
+      (tester) async {
+    await tester.pumpWidget(wrap(
+      DefaultTextStyle(
+        style: const TextStyle(
+          fontFamily: 'CallerFont',
+          letterSpacing: 3.5,
+          fontSize: 99,
+        ),
+        child: ZeroCheckbox(
+          value: false,
+          onChanged: (_) {},
+          label: 'Accept',
+          labelStyle: const TextStyle(
+            color: Color(0xFF595959),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ));
+
+    final TextStyle style = renderedStyle(tester, 'Accept');
+    // Three layers, weakest first: the call site's DefaultTextStyle, the
+    // built-in style, then labelStyle. So an override recolors the label
+    // without taking the app's font away from it...
+    expect(style.fontFamily, 'CallerFont');
+    expect(style.letterSpacing, 3.5);
+    // ...the built-in style still beats what it inherits...
+    expect(style.fontSize, 14);
+    // ...and the override beats both.
+    expect(style.color, const Color(0xFF595959));
+    expect(style.fontWeight, FontWeight.w600);
+  });
+
+  testWidgets('inherit: false replaces the whole stack, disabled color aside',
+      (tester) async {
+    Widget underCallerFont(Widget child) => wrap(
+          DefaultTextStyle(
+            style: const TextStyle(fontFamily: 'CallerFont'),
+            child: child,
+          ),
+        );
+
+    await tester.pumpWidget(underCallerFont(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (_) {},
+        label: 'Accept',
+        labelStyle: const TextStyle(
+          inherit: false,
+          fontSize: 20,
+          color: Color(0xFF123456),
+        ),
+      ),
+    ));
+
+    // Flutter's own convention for opting out of a merge, honored here rather
+    // than reinvented: a caller that wants the built-in style gone entirely —
+    // and the inherited one with it — has a way to say so.
+    var style = renderedStyle(tester, 'Accept');
+    expect(style.fontSize, 20);
+    expect(style.color, const Color(0xFF123456));
+    expect(style.fontFamily, isNull); // inherited, and dropped
+    expect(style.fontWeight, isNull); // built-in w500, and dropped
+    expect(style.height, isNull);
+
+    // The disabled color still lands last, so even a wholesale replacement
+    // cannot make a disabled label read as live.
+    await tester.pumpWidget(underCallerFont(
+      const ZeroCheckbox(
+        value: false,
+        onChanged: null,
+        label: 'Accept',
+        labelStyle: TextStyle(
+          inherit: false,
+          fontSize: 20,
+          color: Color(0xFF123456),
+        ),
+      ),
+    ));
+    style = renderedStyle(tester, 'Accept');
+    expect(style.color, const Color(0xFFBDBDBD)); // ZeroUiColors.textDisabled
+    expect(style.fontSize, 20);
+  });
+
+  testWidgets('labelStyle does not reach a labelWidget, which still toggles '
+      'from the box alone', (tester) async {
+    var toggles = 0;
+    var linkTaps = 0;
+    await tester.pumpWidget(wrap(
+      ZeroCheckbox(
+        value: false,
+        onChanged: (_) => toggles++,
+        label: 'Accept',
+        labelStyle: const TextStyle(fontSize: 40, color: Color(0xFF00FF00)),
+        labelWidget: GestureDetector(
+          onTap: () => linkTaps++,
+          child: const Text('Policy link'),
+        ),
+      ),
+    ));
+
+    // labelWidget still takes precedence over label, and takes the style meant
+    // for the label with it: that caller builds its own label and styles it
+    // there, so a labelStyle leaking in would fight the widget it was given.
+    expect(find.text('Accept'), findsNothing);
+    expect(tester.widget<Text>(find.text('Policy link')).style, isNull);
+    final TextStyle style = renderedStyle(tester, 'Policy link');
+    expect(style.fontSize, isNot(40));
+    expect(style.color, isNot(const Color(0xFF00FF00)));
+
+    // And the branch is otherwise as it was: the custom label owns its
+    // gestures, the box owns the toggle.
+    await tester.tap(find.text('Policy link'));
+    await tester.pump();
+    expect(linkTaps, 1);
+    expect(toggles, 0);
+
+    await tester.tap(find.byType(AnimatedContainer));
+    await tester.pump();
+    expect(toggles, 1);
   });
 
   testWidgets('a tap plays no system click sound', (tester) async {
