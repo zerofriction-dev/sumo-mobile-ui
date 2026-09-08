@@ -13,6 +13,10 @@ import '../theme/zero_ui_colors.dart';
 /// rich label containing tappable links — only the box toggles, so the widget
 /// keeps its own gestures. [padding] enlarges whichever of those is tappable.
 ///
+/// [labelStyle] restyles a plain-text label without moving it into a
+/// [labelWidget], so a label of the call site's own color still toggles from
+/// anywhere in the row.
+///
 /// Whatever is tappable ripples: the tap target is an ink well over a
 /// transparent [Material] the widget supplies itself, so a caller gets the same
 /// press feedback here as from `ZeroButton` without wrapping the control in an
@@ -46,6 +50,34 @@ class ZeroCheckbox extends StatelessWidget {
 
   /// Optional plain-text label rendered next to the box. Tapping it toggles.
   final String? label;
+
+  /// Optional style for the plain-text [label], merged *onto* the built-in one.
+  ///
+  /// The built-in style is the floor rather than the ceiling: the label stays
+  /// 14pt, 1.3 line height, `w500`, in [ZeroUiColors.textPrimary], except
+  /// wherever this style names something else. A caller that only wants a
+  /// heavier weight sets the weight and keeps the rest, instead of restating
+  /// the whole style to hold it still. Pass a style with `inherit: false` to
+  /// replace the built-in one outright — the convention [TextStyle.merge]
+  /// follows everywhere else in Flutter.
+  ///
+  /// It composes over the [DefaultTextStyle] the call site established rather
+  /// than in place of it: the inherited style still supplies whatever neither
+  /// the built-in style nor this one sets — the font family above all — so a
+  /// label can be recolored without leaving the app's font behind. The layers,
+  /// weakest first: inherited, built-in, [labelStyle].
+  ///
+  /// A disabled checkbox paints its label in [ZeroUiColors.textDisabled]
+  /// whatever this style says, because the disabled color is applied last,
+  /// after the merge: an override is a way to restyle a control, not a way to
+  /// make a dead one read as live. Everything else in the override survives
+  /// into the disabled state. A call site that needs a different disabled color
+  /// changes [ZeroUiColors.textDisabled] on the palette, where it applies to
+  /// the check mark too rather than to the label alone.
+  ///
+  /// Ignored when [labelWidget] is used: that caller builds its own label and
+  /// styles it there.
+  final TextStyle? labelStyle;
 
   /// Optional custom label widget. Takes precedence over [label].
   ///
@@ -114,6 +146,7 @@ class ZeroCheckbox extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.label,
+    this.labelStyle,
     this.labelWidget,
     this.enabled = true,
     this.hasError = false,
@@ -324,15 +357,34 @@ class ZeroCheckbox extends StatelessWidget {
     );
   }
 
-  Widget _buildLabel(String text) => Text(
-        text,
-        style: TextStyle(
-          fontSize: 14,
-          height: 1.3,
-          fontWeight: FontWeight.w500,
-          color: _isEnabled ? colors.textPrimary : colors.textDisabled,
-        ),
-      );
+  /// The style the plain-text [label] is drawn with: the built-in one, with
+  /// [labelStyle] merged over it and the disabled color applied last.
+  ///
+  /// Merging rather than replacing is what makes a partial override possible —
+  /// a caller that wants a different color keeps the size, the line height and
+  /// the weight without naming them — and it is the only shape in which the
+  /// built-in style can go on meaning anything once a [labelStyle] exists.
+  /// Forcing the color afterwards while disabled is what keeps that merge safe:
+  /// both call sites this parameter was added for set a color, and a color that
+  /// outlived `enabled: false` would paint a dead control in a live one. The
+  /// disabled state has to read as disabled whatever a caller asked for.
+  ///
+  /// With no [labelStyle] this is the built-in style itself, unmerged, so a
+  /// caller that passes nothing renders exactly what it rendered before the
+  /// parameter existed.
+  TextStyle _resolveLabelStyle() {
+    final TextStyle base = TextStyle(
+      fontSize: 14,
+      height: 1.3,
+      fontWeight: FontWeight.w500,
+      color: _isEnabled ? colors.textPrimary : colors.textDisabled,
+    );
+    if (labelStyle == null) return base;
+    final TextStyle merged = base.merge(labelStyle);
+    return _isEnabled ? merged : merged.copyWith(color: colors.textDisabled);
+  }
+
+  Widget _buildLabel(String text) => Text(text, style: _resolveLabelStyle());
 
   @override
   Widget build(BuildContext context) {
