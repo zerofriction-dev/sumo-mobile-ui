@@ -1,5 +1,80 @@
 # Changelog
 
+## 0.13.3
+
+`ZeroCheckbox` was the one control in this package that answered a press with
+nothing at all: a bare `GestureDetector`, no ripple.
+
+- **The tap target now ripples, and every existing caller gets one.** This is a
+  visible change at all eight call sites that use the widget today, not an
+  opt-in: the app banner opt-out row in all three apps, the email-consent row
+  and the my-car policy consent in super-app, and the three checkboxes in
+  super-app's fuel-record vehicle pickers (two in the filter sheet, one in the
+  dropdown). The press covers what is tappable — with `label`, or with no label,
+  the whole padded row; with `labelWidget`, the padded box alone — so it reads
+  as the size of the target rather than as the size of the box. Where the target
+  *is* the box, see the next entry.
+- **A bare box answers with a radial reaction, not a contained ripple.** Ink is
+  painted underneath its target and clipped to it, so at the six call sites that
+  pass no `padding` a contained ripple would lie entirely under the box — and a
+  checked box is an opaque fill, so the press would have shown while unchecked
+  and vanished while checked, which is the inconsistency the ripple was added to
+  remove. Where the tap target is nothing but the box, the press is therefore
+  drawn the way Flutter's own `Checkbox` draws it: a circle of one box side,
+  centred on the box, reaching half a box past every edge. Where the target is
+  bigger than the box — `padding` was given, or a plain-text `label` sits inside
+  it — nothing changes: the ink fills the target and stays inside it, because
+  there is already somewhere for it to show.
+- **That reaction is painted outside the widget's layout box.** It needs a
+  square twice the box wide to be drawn in, and an `OverflowBox` keeps the
+  widget laying out as the bare box, so an ancestor that clips — a `ClipRRect`,
+  a card edge tight to the box — will clip the halo. Nothing else moves:
+  measured before and after, all eight call-site shapes lay out to the same rect
+  and answer taps over the same rect, the disabled pass-through 0.13.2 added
+  included. One knock-on: a bare box's outer size is now `size` itself rather
+  than the animated fill's current size, so changing `size` at runtime snaps the
+  layout where it used to ease over 150ms — the fill still eases, the start and
+  end states are identical, and no call site changes `size` at runtime.
+- **Same arrangement `ZeroButton` uses, same colors.** An ink well over a
+  `Material`, splash and highlight taken from the palette's `overlayDark` at 20%
+  and 10%. The `Material` is the widget's own and is `MaterialType.transparency`:
+  the checkbox has no fill to draw, so whatever the caller painted behind the
+  row still shows through, and a checkbox dropped into a bare `OverlayEntry` —
+  which has no `Material` above it — ripples like every other call site instead
+  of silently not.
+- **A contained ripple is rounded to `borderRadius`.** Splash and highlight are
+  both clipped to the tap target's rounded rectangle, so a square splash cannot
+  show a corner past the rounded card an opt-out row usually sits at the bottom
+  of. That parameter now describes the ripple as well as the box. (The radial
+  reaction a bare box gets is a circle and has no corner to round.)
+- **No click sound.** An ink well plays the Android system click on tap by
+  default; the checkbox turns that off (`enableFeedback: false`) on both
+  targets, explicitly rather than by inheriting a default. A checkbox is a state
+  toggle rather than a command — Flutter's own `Checkbox` is silent too — and
+  the sound could not be made consistent from inside this package anyway:
+  super-app's fuel-record rows wrap the box in a plain `GestureDetector`, which
+  is silent, so the box would have clicked while the identical tap on the row
+  beside it stayed quiet. 0.13.2 was silent; this release stays silent. A call
+  site that wants the click still gets it from its own row-level `InkWell`.
+- **A plain-text `label` keeps the text style it inherits.** A `Material`
+  injects the theme's `bodyMedium` over whatever `DefaultTextStyle` an ancestor
+  had established, and a `Text` merges its own style onto the inherited one — so
+  simply putting a `Material` inside the checkbox would have taken the call
+  site's font family (and anything else the label does not set for itself) away
+  from every `label:` caller, silently. The checkbox re-establishes the
+  inherited style below its own `Material`, so the label renders exactly as it
+  did in 0.13.2.
+- **A caller's own `InkWell` around the row is now redundant.** company and
+  super-app wrap the opt-out row in one; provider does not, which is why the two
+  looked different. Until those wrappers come off, a press on the box inks the
+  box (the checkbox's own well wins the gesture arena) and a press elsewhere in
+  the row inks the row — the wrapper is what to remove, not this.
+- **A disabled checkbox still ripples nothing and still swallows nothing.** It
+  builds no ink well at all rather than one with a null `onTap`: such a well is
+  `HitTestBehavior.opaque` whether or not it has anything to do, so it would
+  have taken back exactly the pass-through 0.13.2 added — every pointer meant
+  for whatever sits behind the disabled control, across the whole padded band.
+
 ## 0.13.2
 
 `ZeroCheckbox` documented `padding` as the way to enlarge its tap area, and then

@@ -13,6 +13,14 @@ import '../theme/zero_ui_colors.dart';
 /// rich label containing tappable links — only the box toggles, so the widget
 /// keeps its own gestures. [padding] enlarges whichever of those is tappable.
 ///
+/// Whatever is tappable ripples: the tap target is an ink well over a
+/// transparent [Material] the widget supplies itself, so a caller gets the same
+/// press feedback here as from `ZeroButton` without wrapping the control in an
+/// [InkWell] of its own. Where the tap target is bigger than the box the ink
+/// fills it; where the target *is* the box the box gets a radial reaction drawn
+/// past its edges instead, since ink under an opaque checked box would be
+/// invisible. A disabled checkbox has no tap target and no ripple.
+///
 /// The check mark is drawn with a [CustomPainter] (not an icon font), so it
 /// renders identically regardless of the host app's `uses-material-design`
 /// setting.
@@ -55,7 +63,10 @@ class ZeroCheckbox extends StatelessWidget {
   /// Side length of the square box, in logical pixels.
   final double size;
 
-  /// Corner radius of the box.
+  /// Corner radius of the box, and of a contained ripple: splash and highlight
+  /// are rounded to the same radius so neither can show a square corner past a
+  /// rounded container. The radial reaction a bare box gets instead is a circle
+  /// and has no corner to round.
   final double borderRadius;
 
   /// Horizontal gap between the box and the label.
@@ -71,6 +82,10 @@ class ZeroCheckbox extends StatelessWidget {
   /// the padding surrounds all of it. With [labelWidget] only the box is
   /// tappable (see above), so the padding surrounds the box alone: it enlarges
   /// the box's tap target and leaves the custom label untouched.
+  ///
+  /// The ripple follows the same boundary, so the padded band lights up with
+  /// the rest of the target rather than staying a dead margin around it — and
+  /// stays inside it, which an unpadded box's reaction deliberately does not.
   ///
   /// A disabled checkbox has no tap target to enlarge: the padded band lays out
   /// the same but takes no pointers, and taps reach whatever sits behind it.
@@ -120,28 +135,138 @@ class ZeroCheckbox extends StatelessWidget {
     if (_isEnabled) onChanged!(!value);
   }
 
-  /// Builds the tap target around [child].
+  /// Radius of the radial reaction a bare box answers a press with.
   ///
-  /// [padding] is applied here, inside the detector — padded outside it, the
+  /// One box side: the circle reaches half a box past every edge and clears
+  /// the box's rounded corner by `0.29 * size`, near enough the proportion
+  /// Flutter's own [Checkbox] uses for its 20pt reaction on an 18pt box.
+  double get _reactionRadius => size;
+
+  /// Builds the tap target around [child], which is the box alone when
+  /// [boxOnly] and the whole labelled row otherwise.
+  ///
+  /// [padding] is applied here, inside the tap target — padded outside it, the
   /// band would make the control bigger without making it any easier to hit.
   ///
-  /// The detector is only [HitTestBehavior.opaque] while there is something to
-  /// tap. Opacity manufactures a hit target out of the detector's whole
-  /// rectangle, which is what makes the padded band answer; with no [onTap] to
-  /// answer with, that rectangle would merely swallow pointers meant for
-  /// whatever sits behind the disabled control — over the full padded band, now
-  /// that the padding is inside it. Disabled, the detector claims nothing of
-  /// its own and defers to its child.
-  Widget _tappable(Widget child) {
+  /// While there is something to tap the target is an ink well over a
+  /// [Material], the arrangement `ZeroButton` already uses, so the whole target
+  /// — padded band included — answers a press with a ripple. Ink is painted
+  /// into the nearest [Material] above it, and not painted at all without one,
+  /// so the checkbox carries its own rather than trusting every call site to
+  /// have provided one: a checkbox dropped straight into an [OverlayEntry] has
+  /// none. That [Material] is [MaterialType.transparency] — it contributes no
+  /// fill of its own, so whatever the caller painted behind the control still
+  /// shows through.
+  ///
+  /// Where that ink can *show* depends on what the target is, because a
+  /// [Material] paints ink under its child and clips it to its own bounds:
+  ///
+  ///  * Target bigger than the box — [padding] was given, or the plain-text
+  ///    [label] sits inside it — the ink fills the target, clipped to it and
+  ///    rounded to [borderRadius] so a square splash cannot spill past the
+  ///    rounded corner of the card such a row usually sits at the bottom of.
+  ///    The band, or the label, is where the press shows.
+  ///  * Target *is* the box ([boxOnly] with no [padding]) — ink confined to the
+  ///    box would sit entirely underneath it, and a checked box is an opaque
+  ///    fill, so the press would show while unchecked and vanish while checked.
+  ///    The box gets a radial reaction instead, the way Flutter's own
+  ///    [Checkbox] does: a circle of [_reactionRadius] drawn past the box's
+  ///    edges. [InkResponse.containedInkWell] being false is not enough on its
+  ///    own — the [Material] would clip the circle straight back to the box —
+  ///    so the [Material] is given a square of room twice the box wide to paint
+  ///    in, and an [OverflowBox] keeps the widget laying out as the bare box.
+  ///    Only painting reaches outside it: the ink well still wraps the box
+  ///    alone, so the tap area is the box, exactly as it was.
+  ///
+  /// Neither target plays the Android click sound — [InkWell.enableFeedback] is
+  /// off deliberately. A checkbox is a state toggle rather than a command, and
+  /// Flutter's own [Checkbox] is silent too; more to the point the sound cannot
+  /// be made consistent from in here, since call sites wrap the row in a
+  /// [GestureDetector] of their own, which is silent, and a clicking box inside
+  /// a silent row is the inconsistency rather than the fix.
+  ///
+  /// Disabled there is no ink well, and so neither ripple nor tap target: the
+  /// padded band lays out the same and claims nothing. An [InkWell] handed a
+  /// null `onTap` would not have done — the detector it builds is
+  /// [HitTestBehavior.opaque] whether or not it has anything to do, so it would
+  /// swallow every pointer meant for whatever sits behind the disabled control,
+  /// across the whole padded band now that the padding is inside it.
+  Widget _tappable(
+    BuildContext context,
+    Widget child, {
+    required bool boxOnly,
+  }) {
     Widget target = child;
     if (padding != null) {
       target = Padding(padding: padding!, child: target);
     }
-    return GestureDetector(
-      behavior:
-          _isEnabled ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
-      onTap: _isEnabled ? _toggle : null,
-      child: target,
+    if (!_isEnabled) return target;
+
+    final Color splash = colors.overlayDark.withValues(alpha: 0.2);
+    final Color highlight = colors.overlayDark.withValues(alpha: 0.1);
+
+    if (boxOnly && padding == null) {
+      final double room = _reactionRadius * 2;
+      return SizedBox(
+        width: size,
+        height: size,
+        child: OverflowBox(
+          maxWidth: room,
+          maxHeight: room,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Padding(
+              padding: EdgeInsets.all((room - size) / 2),
+              child: InkResponse(
+                onTap: _toggle,
+                containedInkWell: false,
+                highlightShape: BoxShape.circle,
+                radius: _reactionRadius,
+                splashColor: splash,
+                highlightColor: highlight,
+                enableFeedback: false,
+                child: target,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: _toggle,
+        borderRadius: BorderRadius.circular(borderRadius),
+        splashColor: splash,
+        highlightColor: highlight,
+        enableFeedback: false,
+        child: boxOnly ? target : _keepInheritedTextStyle(context, target),
+      ),
+    );
+  }
+
+  /// Re-establishes the caller's [DefaultTextStyle] underneath the [Material].
+  ///
+  /// [Material] wraps its child in an [AnimatedDefaultTextStyle] carrying the
+  /// theme's `bodyMedium`, which replaces whatever style an ancestor had
+  /// established for the plain-text [label]: a [Text] merges its own style onto
+  /// the inherited one, so everything the label does not set itself — the font
+  /// family above all — would start coming from the theme instead of from the
+  /// call site, purely because the checkbox has a [Material] inside it now.
+  /// Copying the ancestor's style back in below that [Material] leaves the
+  /// label rendering exactly as it did before there was a ripple.
+  Widget _keepInheritedTextStyle(BuildContext context, Widget child) {
+    final DefaultTextStyle inherited = DefaultTextStyle.of(context);
+    return DefaultTextStyle(
+      style: inherited.style,
+      textAlign: inherited.textAlign,
+      softWrap: inherited.softWrap,
+      overflow: inherited.overflow,
+      maxLines: inherited.maxLines,
+      textWidthBasis: inherited.textWidthBasis,
+      textHeightBehavior: inherited.textHeightBehavior,
+      child: child,
     );
   }
 
@@ -217,7 +342,7 @@ class ZeroCheckbox extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: alignment,
         children: [
-          _tappable(_buildBox()),
+          _tappable(context, _buildBox(), boxOnly: true),
           SizedBox(width: gap),
           Flexible(child: labelWidget!),
         ],
@@ -225,6 +350,7 @@ class ZeroCheckbox extends StatelessWidget {
     } else if (label != null) {
       // Whole row (box + text) toggles.
       content = _tappable(
+        context,
         Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: alignment,
@@ -234,9 +360,10 @@ class ZeroCheckbox extends StatelessWidget {
             Flexible(child: _buildLabel(label!)),
           ],
         ),
+        boxOnly: false,
       );
     } else {
-      content = _tappable(_buildBox());
+      content = _tappable(context, _buildBox(), boxOnly: true);
     }
 
     return Semantics(checked: value, enabled: _isEnabled, child: content);
