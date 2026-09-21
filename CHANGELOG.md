@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.14.0
+
+`ZeroPickSourceSheet` can now carry a delete action in its footer, beside
+cancel. Provider's "บริการอื่นๆ" tiles are moving to a single แก้ไข control
+that opens this sheet, so replacing and deleting a file become one sheet
+instead of two buttons on the tile — and the delete has to live somewhere.
+
+- **New `onDestructive` / `destructiveText` (default `'ลบ'`)** on both
+  `ZeroPickSourceSheet` and `showZeroPickSourceSheet`. When `onDestructive` is
+  set the cancel group becomes one row, `[ลบ][ยกเลิก]`, at equal widths with a
+  12 gap, each the same height and radius the lone cancel button has always
+  had. ลบ is drawn in `ZeroUiColors.error` (text and outline); ยกเลิก keeps its
+  neutral style.
+- **ลบ closes the sheet first, then calls back** — the same order the option
+  rows use — so a caller can open a confirm dialog without two modals
+  stacking.
+- **`cancelText: ''` still hides cancel.** Given a destructive action as well,
+  ลบ stands alone at full width.
+- **Unchanged when not used.** With `onDestructive` null the footer is
+  pixel-identical to 0.13.4 (checked against goldens rendered from 0.13.4, with
+  and without the cancel group). The one addition is semantic: footer buttons
+  now announce as buttons, the lone cancel button included.
+- **`ZeroPickSourceOption.remove` is not deprecated.** It is still the right
+  fit for a "clear the photo I picked" row inside the list; the footer action
+  is for a sheet whose rows are all about replacing.
+
 ## 0.13.4
 
 `ZeroCheckbox` styled its plain-text `label` from a hardcoded `TextStyle` and

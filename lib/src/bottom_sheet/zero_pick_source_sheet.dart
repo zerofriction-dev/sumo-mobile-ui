@@ -115,6 +115,8 @@ class ZeroPickSourceSheet extends StatelessWidget {
     this.title = 'อัปโหลดรูปภาพ',
     this.subtitle,
     this.cancelText = 'ยกเลิก',
+    this.onDestructive,
+    this.destructiveText = 'ลบ',
     this.colors = const ZeroUiColors(),
   }) : assert(options.length > 0, 'ต้องมีอย่างน้อย 1 ตัวเลือก');
 
@@ -126,6 +128,18 @@ class ZeroPickSourceSheet extends StatelessWidget {
 
   /// Hide the cancel group entirely by passing an empty string.
   final String cancelText;
+
+  /// When set, a [destructiveText] button joins the cancel button on one row,
+  /// `[ลบ][ยกเลิก]` at equal widths. It closes the sheet and *then* runs this,
+  /// so a caller can open a confirm dialog without stacking two modals.
+  ///
+  /// With the cancel group hidden (`cancelText: ''`) the destructive button
+  /// takes the full width on its own. Null keeps the footer exactly as before.
+  final VoidCallback? onDestructive;
+
+  /// Label of the destructive footer button; ignored unless [onDestructive]
+  /// is set.
+  final String destructiveText;
 
   final ZeroUiColors colors;
 
@@ -188,34 +202,122 @@ class ZeroPickSourceSheet extends StatelessWidget {
                 ),
               ),
             ),
-            if (cancelText.isNotEmpty) ...[
+            if (onDestructive != null) ...[
               const SizedBox(height: 20),
-              Material(
-                color: Colors.white,
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: colors.inputBorder, width: 1.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: InkWell(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: Text(
-                        cancelText,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              _DestructiveFooter(
+                cancelText: cancelText,
+                destructiveText: destructiveText,
+                onDestructive: onDestructive!,
+                colors: colors,
+              ),
+            ] else if (cancelText.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _FooterButton(
+                label: cancelText,
+                borderColor: colors.inputBorder,
+                labelColor: colors.textPrimary,
+                onTap: () => Navigator.of(context).pop(),
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DestructiveFooter extends StatelessWidget {
+  const _DestructiveFooter({
+    required this.cancelText,
+    required this.destructiveText,
+    required this.onDestructive,
+    required this.colors,
+  });
+
+  final String cancelText;
+  final String destructiveText;
+  final VoidCallback onDestructive;
+  final ZeroUiColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget destructive = _FooterButton(
+      label: destructiveText,
+      borderColor: colors.error,
+      labelColor: colors.error,
+      singleLine: true,
+      onTap: () {
+        Navigator.of(context).pop();
+        onDestructive();
+      },
+    );
+    if (cancelText.isEmpty) return destructive;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: destructive),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _FooterButton(
+            label: cancelText,
+            borderColor: colors.inputBorder,
+            labelColor: colors.textPrimary,
+            singleLine: true,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FooterButton extends StatelessWidget {
+  const _FooterButton({
+    required this.label,
+    required this.borderColor,
+    required this.labelColor,
+    required this.onTap,
+    this.singleLine = false,
+  });
+
+  final String label;
+  final Color borderColor;
+  final Color labelColor;
+  final VoidCallback onTap;
+
+  /// Side-by-side buttons ellipsise rather than wrap so the pair keeps one
+  /// shared height; the lone cancel button keeps its original wrapping.
+  final bool singleLine;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      child: Material(
+        color: Colors.white,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: borderColor, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                label,
+                maxLines: singleLine ? 1 : null,
+                overflow: singleLine ? TextOverflow.ellipsis : null,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: labelColor,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -319,6 +421,8 @@ Future<T?> showZeroPickSourceSheet<T>(
   String title = 'อัปโหลดรูปภาพ',
   String? subtitle,
   String cancelText = 'ยกเลิก',
+  VoidCallback? onDestructive,
+  String destructiveText = 'ลบ',
   ZeroUiColors colors = const ZeroUiColors(),
 }) {
   return showModalBottomSheet<T>(
@@ -334,6 +438,8 @@ Future<T?> showZeroPickSourceSheet<T>(
       title: title,
       subtitle: subtitle,
       cancelText: cancelText,
+      onDestructive: onDestructive,
+      destructiveText: destructiveText,
       colors: colors,
     ),
   );
