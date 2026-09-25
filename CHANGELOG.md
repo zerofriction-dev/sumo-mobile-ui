@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.15.0
+
+New **`ZeroHelpSheet`** (opened with `showZeroHelpSheet`) — the help /
+emergency bottom sheet that super-app, provider and company each built on their
+own. It is the approved v3 design moved into the package, so all three apps can
+show the same sheet, pixel for pixel, instead of three copies that drift.
+
+- **Two modes, chosen by what you pass.** Leave `emergencyItems` empty and the
+  sheet is the "ศูนย์ช่วยเหลือ" layout: title, optional subtitle, then the
+  contact rows. Pass emergency items and they come first as pale red cards —
+  service name on the left, the number large on the right — then the same
+  contact rows after a 16 gap. There is no mode flag to keep in sync.
+- **Thai defaults for the four items every app uses.**
+  `ZeroHelpEmergencyItem.ambulance` (แพทย์ฉุกเฉิน · 1669),
+  `ZeroHelpEmergencyItem.police` (แจ้งตำรวจ · 191),
+  `ZeroHelpContactItem.staffCall` (ติดต่อเจ้าหน้าที่ · เจ้าหน้าที่บริการ 24
+  ชั่วโมง · the `phoneText` you pass) and `ZeroHelpContactItem.line`
+  (แชทกับเจ้าหน้าที่ผ่าน LINE · เปิดไลน์ทางการของ SUMO). Every string can be
+  overridden, and the plain constructors take any icon / color / lines for a
+  row the shorthands do not cover. Emergency numbers are shown exactly as
+  given — the sheet never reformats them.
+- **UI only.** The sheet dials nothing, opens no URL and shows no snackbar:
+  each item's `onTap` is where the app calls, launches LINE and reports a
+  failure, with its own phone constants and launcher. That keeps the package
+  free of `url_launcher` and app constants.
+- **Closes itself first, then calls back** — the same order
+  `ZeroPickSourceSheet` rows use — so an app's "โทรไม่ได้" snackbar or dialog
+  never lands underneath the sheet. The × in the header closes without calling
+  anything.
+- **Paints its own white, top-rounded background** and caps itself at 90% of
+  the screen height, scrolling beyond that (small screens, large text). So it
+  looks the same whether an app opens it with `showZeroHelpSheet`,
+  `showModalBottomSheet` or `Get.bottomSheet` (pass `isScrollControlled: true`
+  to the last two). Bottom padding is the device's bottom inset + 12.
+- **Accessible.** Each card and row reads as one button with its full text
+  ("แพทย์ฉุกเฉิน 1669"), and the × as the platform's localized "close" button.
+- **Four new `ZeroUiColors` tokens**, defaulting to the approved design's
+  values: `primaryInk` (`#CC0000`, the numbers and icons on the red tint),
+  `errorTint` (`#FFF1F1`, the emergency card fill), `brandLine` (`#049540`,
+  the LINE icon) and `divider` (`#E0E0E0`, the drag handle). All are in
+  `copyWith`. **No existing token changed**, so no existing widget looks any
+  different after upgrading; the secondary text reuses the existing
+  `textSecondary` (`#595959`).
+
 ## 0.14.0
 
 `ZeroPickSourceSheet` can now carry a delete action in its footer, beside
