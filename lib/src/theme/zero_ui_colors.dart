@@ -55,6 +55,20 @@ class ZeroUiColors {
   /// Dark overlay used for a button's splash / highlight.
   final Color overlayDark;
 
+  /// Red for text and icons drawn on [errorTint] — a darker step of the brand
+  /// red that stays readable on the pale tint (e.g. the help sheet's 1669).
+  final Color primaryInk;
+
+  /// Pale red fill behind urgent content (e.g. the help sheet's emergency
+  /// cards). Pairs with [primaryInk].
+  final Color errorTint;
+
+  /// LINE's brand green (e.g. the help sheet's "chat on LINE" row icon).
+  final Color brandLine;
+
+  /// Neutral hairline color, also used for a sheet's drag handle.
+  final Color divider;
+
   const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
@@ -72,6 +86,10 @@ class ZeroUiColors {
     this.textInverse = const Color(0xFFFFFFFF),
     this.buttonDisabled = const Color(0xFFE0E0E0),
     this.overlayDark = const Color(0x80000000),
+    this.primaryInk = const Color(0xFFCC0000),
+    this.errorTint = const Color(0xFFFFF1F1),
+    this.brandLine = const Color(0xFF049540),
+    this.divider = const Color(0xFFE0E0E0),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
@@ -92,6 +110,10 @@ class ZeroUiColors {
     Color? textInverse,
     Color? buttonDisabled,
     Color? overlayDark,
+    Color? primaryInk,
+    Color? errorTint,
+    Color? brandLine,
+    Color? divider,
   }) {
     return ZeroUiColors(
       primary: primary ?? this.primary,
@@ -110,6 +132,10 @@ class ZeroUiColors {
       textInverse: textInverse ?? this.textInverse,
       buttonDisabled: buttonDisabled ?? this.buttonDisabled,
       overlayDark: overlayDark ?? this.overlayDark,
+      primaryInk: primaryInk ?? this.primaryInk,
+      errorTint: errorTint ?? this.errorTint,
+      brandLine: brandLine ?? this.brandLine,
+      divider: divider ?? this.divider,
     );
   }
 }

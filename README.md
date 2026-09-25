@@ -15,6 +15,9 @@ Widgets:
   `hasError` states, and an animated check.
 - **`ZeroPickSourceSheet`** — bottom sheet for choosing camera / gallery / file,
   opened with `showZeroPickSourceSheet`.
+- **`ZeroHelpSheet`** — the shared help / emergency sheet (1669 · 191 cards,
+  staff call and LINE rows, Thai defaults), opened with `showZeroHelpSheet`.
+  UI only: each item's `onTap` does the calling / launching.
 - **`ZeroDatePicker`** — tap-only date picker in Thai Buddhist years
   (`ZeroCalendarEra.gregorian` to opt out), with out-of-range days and years
   greyed out and `initialDate` clamped into the range.
@@ -59,6 +62,20 @@ final picked = await ZeroDatePicker.show(
   firstDate: DateTime(now.year, now.month, now.day),
   lastDate: DateTime(now.year + 20),
   initialDate: expiryDate,
+);
+
+// Help sheet — pass emergencyItems for the on-the-road variant, omit for normal
+showZeroHelpSheet(
+  context,
+  title: 'ติดต่อฉุกเฉิน',
+  emergencyItems: [
+    ZeroHelpEmergencyItem.ambulance(onTap: () => call('1669')),
+    ZeroHelpEmergencyItem.police(onTap: () => call('191')),
+  ],
+  contactItems: [
+    ZeroHelpContactItem.staffCall(phoneText: 'โทร 092 996 8888', onTap: callStaff),
+    ZeroHelpContactItem.line(onTap: openLine),
+  ],
 );
 
 // Searchable dropdown
