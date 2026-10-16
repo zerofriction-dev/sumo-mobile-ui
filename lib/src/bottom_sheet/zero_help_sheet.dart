@@ -77,6 +77,7 @@ class ZeroHelpContactItem {
     this.lines = const <String>[],
     required this.trailingIcon,
     required this.onTap,
+    this.badgeCount = 0,
   }) : _accent = _ContactAccent.primary;
 
   const ZeroHelpContactItem._({
@@ -86,6 +87,7 @@ class ZeroHelpContactItem {
     required this.lines,
     required this.trailingIcon,
     required this.onTap,
+    required this.badgeCount,
     required _ContactAccent accent,
   }) : _accent = accent;
 
@@ -108,6 +110,8 @@ class ZeroHelpContactItem {
   /// Runs after the sheet has closed itself.
   final VoidCallback onTap;
 
+  final int badgeCount;
+
   final _ContactAccent _accent;
 
   /// "Call our staff" — a headset in the palette's `primary`, the hours and
@@ -121,6 +125,7 @@ class ZeroHelpContactItem {
     required String phoneText,
     Color? iconColor,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) => ZeroHelpContactItem._(
     icon: TablerIcons.headset,
     iconColor: iconColor,
@@ -131,6 +136,7 @@ class ZeroHelpContactItem {
     ],
     trailingIcon: TablerIcons.phone,
     onTap: onTap,
+    badgeCount: badgeCount,
     accent: _ContactAccent.primary,
   );
 
@@ -141,6 +147,7 @@ class ZeroHelpContactItem {
     String subtitle = 'เปิดไลน์ทางการของ SUMO',
     Color? iconColor,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) => ZeroHelpContactItem._(
     icon: TablerIcons.brand_line,
     iconColor: iconColor,
@@ -148,6 +155,7 @@ class ZeroHelpContactItem {
     lines: <String>[if (subtitle.isNotEmpty) subtitle],
     trailingIcon: TablerIcons.external_link,
     onTap: onTap,
+    badgeCount: badgeCount,
     accent: _ContactAccent.brandLine,
   );
 
@@ -431,6 +439,11 @@ class _ContactRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = item._iconColorIn(colors);
+    final Widget trailing = Icon(
+      item.trailingIcon,
+      color: colors.iconSecondary,
+      size: 20,
+    );
 
     return MergeSemantics(
       child: Semantics(
@@ -485,15 +498,54 @@ class _ContactRow extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(
-                    item.trailingIcon,
-                    color: colors.iconSecondary,
-                    size: 20,
-                  ),
+                  if (item.badgeCount > 0)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 8,
+                      children: [
+                        _CountBadge(count: item.badgeCount, colors: colors),
+                        trailing,
+                      ],
+                    )
+                  else
+                    trailing,
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count, required this.colors});
+
+  final int count;
+  final ZeroUiColors colors;
+
+  static const int _cap = 99;
+  static const double _size = 18;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: _size, minHeight: _size),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors.primaryFill,
+        borderRadius: BorderRadius.circular(_size),
+      ),
+      child: Text(
+        count > _cap ? '$_cap+' : '$count',
+        textScaler: TextScaler.noScaling,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+          color: colors.textInverse,
         ),
       ),
     );

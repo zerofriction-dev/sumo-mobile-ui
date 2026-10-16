@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.16.0
+
+Rows in `ZeroHelpSheet` can now show an unread count. The customer app's
+"แชทกับศูนย์ช่วยเหลือ" row needs to tell the user that the help-center chat has
+messages waiting before they open it, and the sheet's rows had nowhere to put
+that number.
+
+- **New `badgeCount` (default `0`)** on `ZeroHelpContactItem` — the main
+  constructor and both shorthands, `.staffCall` and `.line`. Above zero, the row
+  draws a red count badge on its trailing side, 8 before the trailing icon.
+- **Same look as the app's chat unread badge.** 18 high, a circle for one digit
+  and a pill for more, the number in bold white 11, and `99+` for anything over
+  99. The number ignores the user's text scale, as the app's does, so the badge
+  never grows into the row at large text sizes.
+- **Read out with the row.** The count joins the row's single button label
+  after its text ("แชทกับศูนย์ช่วยเหลือ … 3"); the package adds the number
+  only, no new wording.
+- **Unchanged when not used.** At `0` (or below) the row builds exactly the
+  widgets it did in 0.15.0, so every existing sheet looks and reads the same
+  after upgrading. Taps still close the sheet first, then call back — tapping
+  the badge included.
+- **One new `ZeroUiColors` token, `primaryFill` (`#E50000`)** — the badge
+  fill. It is the app's accessible red for a fill under white text (4.85:1,
+  where `primary` `#FC0000` gives about 4.1:1, short of 4.5:1 for small text).
+  It is in `copyWith`, and **no existing token changed**.
+
 ## 0.15.0
 
 New **`ZeroHelpSheet`** (opened with `showZeroHelpSheet`) — the help /
