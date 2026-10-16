@@ -538,6 +538,250 @@ void main() {
     });
   });
 
+  group('unread badge', () {
+    const String chatTitle = 'แชทกับศูนย์ช่วยเหลือ';
+    const String chatLine = 'คุยกับเจ้าหน้าที่ในแอป';
+    const ZeroUiColors palette = ZeroUiColors();
+
+    ZeroHelpContactItem chatRow({
+      int badgeCount = 0,
+      String title = chatTitle,
+    }) => ZeroHelpContactItem(
+      icon: TablerIcons.messages,
+      iconColor: Colors.red,
+      title: title,
+      lines: const [chatLine],
+      trailingIcon: TablerIcons.chevron_right,
+      onTap: () {},
+      badgeCount: badgeCount,
+    );
+
+    Finder badgeFill() => find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration! as BoxDecoration).color == palette.primaryFill,
+    );
+
+    testWidgets('no badge when the count is 0 or below', (tester) async {
+      await pumpSheet(
+        tester,
+        contactItems: [
+          chatRow(),
+          ZeroHelpContactItem(
+            icon: TablerIcons.mail,
+            iconColor: Colors.blue,
+            title: 'อีเมล',
+            trailingIcon: TablerIcons.send,
+            onTap: () {},
+            badgeCount: -3,
+          ),
+          ...contacts(),
+        ],
+      );
+
+      expect(badgeFill(), findsNothing);
+      expect(find.text('0'), findsNothing);
+      expect(find.text('-3'), findsNothing);
+      expect(find.byIcon(TablerIcons.chevron_right), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.byIcon(TablerIcons.chevron_right),
+          matching: find.byType(Row),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a count of 1 draws an 18-high red pill before the trailing '
+        'icon', (tester) async {
+      await pumpSheet(tester, contactItems: [chatRow(badgeCount: 1)]);
+
+      expect(find.text('1'), findsOneWidget);
+      expect(badgeFill(), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.text('1')).style?.color,
+        palette.textInverse,
+      );
+      expect(
+        tester.widget<Text>(find.text('1')).style?.fontWeight,
+        FontWeight.w700,
+      );
+
+      final Rect badge = tester.getRect(badgeFill());
+      final Rect chevron = tester.getRect(
+        find.byIcon(TablerIcons.chevron_right),
+      );
+      final Rect title = tester.getRect(find.text(chatTitle));
+      final Container box = tester.widget<Container>(badgeFill());
+      expect(box.constraints?.minWidth, 18);
+      expect(box.constraints?.minHeight, 18);
+      expect(
+        (box.decoration! as BoxDecoration).borderRadius,
+        BorderRadius.circular(18),
+      );
+      expect(badge.height, 18);
+      expect(badge.width, greaterThanOrEqualTo(18));
+      expect(badge.right, moreOrLessEquals(chevron.left - 8));
+      expect(badge.left, greaterThanOrEqualTo(title.right));
+      expect(badge.center.dy, moreOrLessEquals(chevron.center.dy));
+    });
+
+    testWidgets('counts above 99 read 99+', (tester) async {
+      await pumpSheet(tester, contactItems: [chatRow(badgeCount: 120)]);
+
+      expect(find.text('99+'), findsOneWidget);
+      expect(find.text('120'), findsNothing);
+      final Rect badge = tester.getRect(badgeFill());
+      expect(badge.height, 18);
+      expect(badge.width, greaterThan(18));
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      await pumpSheet(tester, contactItems: [chatRow(badgeCount: 99)]);
+      expect(find.text('99'), findsOneWidget);
+      expect(find.text('99+'), findsNothing);
+    });
+
+    testWidgets('the shorthands carry a badge too', (tester) async {
+      await pumpSheet(
+        tester,
+        contactItems: [
+          ZeroHelpContactItem.staffCall(
+            phoneText: phoneText,
+            onTap: () {},
+            badgeCount: 2,
+          ),
+          ZeroHelpContactItem.line(onTap: () {}, badgeCount: 5),
+        ],
+      );
+
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+      expect(badgeFill(), findsNWidgets(2));
+    });
+
+    testWidgets('the row announces the count after its text', (tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await pumpSheet(
+        tester,
+        contactItems: [
+          chatRow(badgeCount: 3),
+          chatRow(title: 'อื่น ๆ', badgeCount: 150),
+        ],
+      );
+
+      expect(
+        tester.getSemantics(find.text(chatTitle)),
+        isSemantics(
+          label: '$chatTitle\n$chatLine\n3',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.text('อื่น ๆ')),
+        isSemantics(
+          label: 'อื่น ๆ\n$chatLine\n99+',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a tap on a badged row still closes then calls back', (
+      tester,
+    ) async {
+      final List<String> log = [];
+      await pumpSheet(
+        tester,
+        log: log,
+        contactItems: [
+          ZeroHelpContactItem(
+            icon: TablerIcons.messages,
+            iconColor: Colors.red,
+            title: chatTitle,
+            trailingIcon: TablerIcons.chevron_right,
+            onTap: () => log.add('chat'),
+            badgeCount: 4,
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('4'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ZeroHelpSheet), findsNothing);
+      expect(log, ['chat', 'closed']);
+    });
+
+    testWidgets('no overflow at 320 wide and text scale 1.3', (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewPadding = const FakeViewPadding(bottom: 34);
+      tester.view.padding = const FakeViewPadding(bottom: 34);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.3)),
+            child: child!,
+          ),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showZeroHelpSheet(
+                    context,
+                    title: 'ติดต่อฉุกเฉิน',
+                    emergencyItems: emergency(),
+                    contactItems: [
+                      chatRow(
+                        title: 'แชทกับศูนย์ช่วยเหลือของ SUMO ตลอด 24 ชั่วโมง',
+                        badgeCount: 120,
+                      ),
+                      ZeroHelpContactItem.staffCall(
+                        phoneText: phoneText,
+                        onTap: () {},
+                        badgeCount: 7,
+                      ),
+                      ZeroHelpContactItem.line(onTap: () {}, badgeCount: 1),
+                    ],
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      final Finder lastRow = find.text('เปิดไลน์ทางการของ SUMO');
+      await tester.dragUntilVisible(
+        lastRow,
+        find.byType(SingleChildScrollView),
+        const Offset(0, -80),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      for (final String count in ['99+', '7', '1']) {
+        final Rect badge = tester.getRect(
+          find.ancestor(of: find.text(count), matching: badgeFill()),
+        );
+        expect(badge.height, 18);
+        expect(badge.left, greaterThanOrEqualTo(20));
+        expect(badge.right, lessThanOrEqualTo(320 - 20 - 20 - 8));
+      }
+    });
+  });
+
   test('new palette tokens default to the approved design values', () {
     const ZeroUiColors palette = ZeroUiColors();
     expect(palette.primaryInk, const Color(0xFFCC0000));
@@ -552,5 +796,18 @@ void main() {
     expect(copy.primaryInk, palette.primaryInk);
     expect(copy.errorTint, palette.errorTint);
     expect(copy.divider, palette.divider);
+  });
+
+  test('primaryFill defaults to the badge red and is in copyWith', () {
+    const ZeroUiColors palette = ZeroUiColors();
+    expect(palette.primaryFill, const Color(0xFFE50000));
+    expect(palette.primary, const Color(0xFFFC0000));
+    final ZeroUiColors copy = palette.copyWith(primaryFill: Colors.purple);
+    expect(copy.primaryFill, Colors.purple);
+    expect(copy.primary, palette.primary);
+    expect(
+      palette.copyWith(divider: Colors.grey).primaryFill,
+      palette.primaryFill,
+    );
   });
 }

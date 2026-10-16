@@ -69,6 +69,8 @@ class ZeroUiColors {
   /// Neutral hairline color, also used for a sheet's drag handle.
   final Color divider;
 
+  final Color primaryFill;
+
   const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
@@ -90,6 +92,7 @@ class ZeroUiColors {
     this.errorTint = const Color(0xFFFFF1F1),
     this.brandLine = const Color(0xFF049540),
     this.divider = const Color(0xFFE0E0E0),
+    this.primaryFill = const Color(0xFFE50000),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
@@ -114,6 +117,7 @@ class ZeroUiColors {
     Color? errorTint,
     Color? brandLine,
     Color? divider,
+    Color? primaryFill,
   }) {
     return ZeroUiColors(
       primary: primary ?? this.primary,
@@ -136,6 +140,7 @@ class ZeroUiColors {
       errorTint: errorTint ?? this.errorTint,
       brandLine: brandLine ?? this.brandLine,
       divider: divider ?? this.divider,
+      primaryFill: primaryFill ?? this.primaryFill,
     );
   }
 }
