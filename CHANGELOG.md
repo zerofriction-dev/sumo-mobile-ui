@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.17.0
+
+New **"สอนใช้งาน"** widgets (spec `knowledge-base/specs/kc-help-screens.md`
+§2, §6.3, §8.2 — piece 2b) so provider, company and super-app can show the
+same in-app how-to sheet and "พาชมหน้านี้" tour. All UI only: steps and sheet
+content come in as parameters, what happened goes out through callbacks — no
+HTTP, no GetX, nothing stored.
+
+- **`ZeroTourRegistry`** — put once at the root (e.g. `GetMaterialApp.builder`).
+  Holds the anchor book (`ZeroTourAnchorBook`).
+- **`ZeroTourAnchor(id:, child:)`** — marks what a step with `anchor == id`
+  points at. No layout change; does nothing without a registry.
+- **`ZeroTourOverlay.show` / `.showAuto`** — OverlayEntry + CustomPainter scrim
+  with a hole around the anchor, a bubble with "พาชมหน้านี้", counter `2/5`,
+  "ย้อนกลับ" · "ถัดไป" · "ข้าม" · "เสร็จแล้ว", optional "ดูคลิปสาธิต".
+  Returns a `ZeroTourSession` (`result`, `close()`).
+  - Anchor rules, same as the back office's `DsTour`: wait ≤ 1.5 s per anchor;
+    a missing one is skipped and reported once through `onAnchorMissing`;
+    more than half missing ⇒ cancelled, `onCompleted` never runs (AC-13); an
+    anchor that vanishes mid-tour gets one more wait, then is skipped.
+  - `.showAuto` gate (`checkZeroAutoTour`): first anchor missing or more than
+    half missing ⇒ nothing shown, `onBlocked`, not seen. Otherwise the card
+    "พาชม N จุด ใช้ไม่ถึง 1 นาที" [เริ่มเลย] [ไว้ทีหลัง] (`onPostponed`).
+  - Device back button = "ข้าม" (a local history entry on the screen's route —
+    no route is pushed, so `Get.currentRoute` and route observers never see
+    the tour). Scrolls off-screen anchors into view with
+    `Scrollable.ensureVisible`, instantly under reduced motion.
+- **`ZeroHelpButton`** — `tabler-help-circle`, tooltip + semantics
+  "วิธีใช้หน้านี้" / "How to use this screen". Only calls `onPressed`.
+- **`ZeroHowToSheet` / `showZeroHowToSheet`** — heading "วิธีใช้หน้านี้", the
+  screen name, app-drawn content (`contentBuilder(context, screenKey)`, since
+  the package has no HTML renderer), then "เริ่มพาชม"/"พาชมอีกครั้ง"
+  (`tourSeen`), "ดูคลิปสาธิต" and "ยังไม่ชัด? ติดต่อเจ้าหน้าที่" — each only
+  when its callback is given. Opens from any button or from code by
+  `screenKey`.
+- **`ZeroTourStep`** (+ `fromJson` for one `help_json` step), `planZeroTour`,
+  `checkZeroAutoTour`, `ZeroTourResult` / `ZeroTourOutcome`.
+- **`ZeroHelpLabels`** — every fixed word, Thai by default, `ZeroHelpLabels.en`.
+- **One new `ZeroUiColors` token, `surface` (`#FFFFFF`)** — background of the
+  tour bubble and the how-to sheet, so a dark palette can be passed in. In
+  `copyWith`; **no existing token changed**.
+
 ## 0.16.0
 
 Rows in `ZeroHelpSheet` can now show an unread count. The customer app's
