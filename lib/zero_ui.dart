@@ -3,7 +3,7 @@
 /// Exposes [ZeroTextField], [ZeroDropdownSearch], [ZeroButton], [ZeroCheckbox],
 /// [ZeroPickSourceSheet], [ZeroHelpSheet], [ZeroDatePicker] and the
 /// "สอนใช้งาน" set ([ZeroTourRegistry], [ZeroTourAnchor], [ZeroTourOverlay],
-/// [ZeroHelpButton], [ZeroHowToSheet]) — widgets sharing a single [ZeroUiColors] palette whose defaults reproduce the
+/// [ZeroHelpButton], [ZeroHowToSheet], [ZeroGuidePlayer]) — widgets sharing a single [ZeroUiColors] palette whose defaults reproduce the
 /// original design.
 library;
 
@@ -22,3 +22,6 @@ export 'src/how_to/zero_how_to_sheet.dart';
 export 'src/tour/zero_tour_step.dart';
 export 'src/tour/zero_tour_registry.dart';
 export 'src/tour/zero_tour_overlay.dart';
+export 'src/guide/zero_guide_clip.dart';
+export 'src/guide/zero_guide_timeline.dart';
+export 'src/guide/zero_guide_player.dart';

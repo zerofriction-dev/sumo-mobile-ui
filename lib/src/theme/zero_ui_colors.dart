@@ -76,6 +76,12 @@ class ZeroUiColors {
   /// [textPrimary] / [textSecondary] / [divider]) to use them in a dark theme.
   final Color surface;
 
+  /// [ZeroGuidePlayer]: number circle of a step the clip has passed.
+  final Color guideStepDone;
+
+  /// [ZeroGuidePlayer]: text of a step the clip has not reached yet.
+  final Color guideStepPending;
+
   const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
@@ -99,6 +105,8 @@ class ZeroUiColors {
     this.divider = const Color(0xFFE0E0E0),
     this.primaryFill = const Color(0xFFE50000),
     this.surface = const Color(0xFFFFFFFF),
+    this.guideStepDone = const Color(0xFF2ECC71),
+    this.guideStepPending = const Color(0xFFA0A0A0),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
@@ -125,6 +133,8 @@ class ZeroUiColors {
     Color? divider,
     Color? primaryFill,
     Color? surface,
+    Color? guideStepDone,
+    Color? guideStepPending,
   }) {
     return ZeroUiColors(
       primary: primary ?? this.primary,
@@ -149,6 +159,8 @@ class ZeroUiColors {
       divider: divider ?? this.divider,
       primaryFill: primaryFill ?? this.primaryFill,
       surface: surface ?? this.surface,
+      guideStepDone: guideStepDone ?? this.guideStepDone,
+      guideStepPending: guideStepPending ?? this.guideStepPending,
     );
   }
 }

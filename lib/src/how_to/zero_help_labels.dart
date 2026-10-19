@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 /// Every piece of fixed wording drawn by the "สอนใช้งาน" widgets —
-/// [ZeroHelpButton], [ZeroHowToSheet] and the [ZeroTourOverlay] bubble.
+/// [ZeroHelpButton], [ZeroHowToSheet], the [ZeroTourOverlay] bubble and
+/// [ZeroGuidePlayer].
 ///
 /// The defaults are the approved Thai terms (spec `kc-help-screens.md` §2).
 /// Apps that switch language pass [ZeroHelpLabels.en] (or their own `.tr`
@@ -26,6 +27,14 @@ class ZeroHelpLabels {
     this.autoTourTitle = 'พาชม {n} จุด ใช้ไม่ถึง 1 นาที',
     this.autoTourStart = 'เริ่มเลย',
     this.autoTourLater = 'ไว้ทีหลัง',
+    this.clipReplay = 'ดูอีกครั้ง',
+    this.clipPlay = 'เล่นคลิป',
+    this.clipUnderstood = 'เข้าใจแล้ว',
+    this.clipClose = 'ปิด',
+    this.clipLoading = 'กำลังโหลดคลิปสาธิต…',
+    this.clipError = 'โหลดคลิปสาธิตไม่สำเร็จ',
+    this.clipRetry = 'ลองอีกครั้ง',
+    this.clipStep = 'ขั้นที่ {n}',
   });
 
   /// English wording for the customer app (spec §2, column "EN").
@@ -46,6 +55,14 @@ class ZeroHelpLabels {
     autoTourTitle: '{n} stops, under a minute',
     autoTourStart: 'Start',
     autoTourLater: 'Later',
+    clipReplay: 'Watch again',
+    clipPlay: 'Play clip',
+    clipUnderstood: 'Got it',
+    clipClose: 'Close',
+    clipLoading: 'Loading the demo clip…',
+    clipError: "Couldn't load the demo clip",
+    clipRetry: 'Try again',
+    clipStep: 'Step {n}',
   );
 
   /// Tooltip and screen-reader label of the `?` button.
@@ -89,7 +106,35 @@ class ZeroHelpLabels {
   final String autoTourStart;
   final String autoTourLater;
 
+  /// [ZeroGuidePlayer]: replays the clip from the start.
+  final String clipReplay;
+
+  /// [ZeroGuidePlayer] under reduced motion, where the clip does not start on
+  /// its own: plays it once on request.
+  final String clipPlay;
+
+  /// [ZeroGuidePlayer] primary button — closes with "understood".
+  final String clipUnderstood;
+
+  /// Tooltip / screen-reader label of the player's ✕.
+  final String clipClose;
+
+  /// Screen-reader label while the clip file is loading.
+  final String clipLoading;
+
+  /// Shown in place of the clip when it cannot be loaded or decoded.
+  final String clipError;
+
+  /// Button under [clipError] that loads the clip again.
+  final String clipRetry;
+
+  /// Screen-reader prefix of a step row; `{n}` becomes the step number.
+  final String clipStep;
+
   /// [autoTourTitle] with `{n}` replaced by [stops].
   String autoTourTitleFor(int stops) =>
       autoTourTitle.replaceAll('{n}', '$stops');
+
+  /// [clipStep] with `{n}` replaced by [number].
+  String clipStepFor(int number) => clipStep.replaceAll('{n}', '$number');
 }
