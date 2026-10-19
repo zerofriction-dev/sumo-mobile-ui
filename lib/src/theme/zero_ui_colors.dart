@@ -52,6 +52,10 @@ class ZeroUiColors {
   /// Fill color of a disabled button.
   final Color buttonDisabled;
 
+  /// Outline of a secondary (outlined) button, e.g. [ZeroGuidePlayer]'s
+  /// "ดูอีกครั้ง" / "เล่นคลิป".
+  final Color buttonBorder;
+
   /// Dark overlay used for a button's splash / highlight.
   final Color overlayDark;
 
@@ -98,6 +102,7 @@ class ZeroUiColors {
     this.dropdownItemSelected = const Color(0x0D000000),
     this.textInverse = const Color(0xFFFFFFFF),
     this.buttonDisabled = const Color(0xFFE0E0E0),
+    this.buttonBorder = const Color(0xFFE5E5E5),
     this.overlayDark = const Color(0x80000000),
     this.primaryInk = const Color(0xFFCC0000),
     this.errorTint = const Color(0xFFFFF1F1),
@@ -126,6 +131,7 @@ class ZeroUiColors {
     Color? dropdownItemSelected,
     Color? textInverse,
     Color? buttonDisabled,
+    Color? buttonBorder,
     Color? overlayDark,
     Color? primaryInk,
     Color? errorTint,
@@ -152,6 +158,7 @@ class ZeroUiColors {
       dropdownItemSelected: dropdownItemSelected ?? this.dropdownItemSelected,
       textInverse: textInverse ?? this.textInverse,
       buttonDisabled: buttonDisabled ?? this.buttonDisabled,
+      buttonBorder: buttonBorder ?? this.buttonBorder,
       overlayDark: overlayDark ?? this.overlayDark,
       primaryInk: primaryInk ?? this.primaryInk,
       errorTint: errorTint ?? this.errorTint,

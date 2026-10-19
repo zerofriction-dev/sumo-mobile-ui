@@ -329,10 +329,9 @@ void main() {
     expect(find.text('ดูอีกครั้ง'), findsOneWidget);
   });
 
-  testWidgets('a clip that fails to load shows the error with ลองอีกครั้ง; '
-      'steps stay readable and เข้าใจแล้ว still works', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('a clip that fails to load shows the error with ลองอีกครั้ง '
+      'and no เข้าใจแล้ว; steps stay readable; a retry brings the buttons '
+      'back', (WidgetTester tester) async {
     var attempts = 0;
     await open(
       tester,
@@ -347,6 +346,8 @@ void main() {
     expect(find.text('โหลดคลิปสาธิตไม่สำเร็จ'), findsOneWidget);
     expect(find.text('ลองอีกครั้ง'), findsOneWidget);
     expect(find.text('ดูอีกครั้ง'), findsNothing);
+    expect(find.text('เข้าใจแล้ว'), findsNothing);
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     expect(log, contains('error'));
     expect(player(tester).error, isA<SocketException>());
     expect(states(tester), everyElement(ZeroGuideStepState.current));
@@ -361,6 +362,65 @@ void main() {
 
     await closeWith(tester, find.text('เข้าใจแล้ว'));
     expect(outcome, ZeroGuideOutcome.understood);
+  });
+
+  testWidgets('✕ on the error state → dismissed through onDismissed', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      load: (ZeroGuideClip c) async => throw const SocketException('offline'),
+    );
+    await tester.pump();
+    expect(find.text('โหลดคลิปสาธิตไม่สำเร็จ'), findsOneWidget);
+
+    await closeWith(tester, find.byIcon(Icons.close_rounded));
+    expect(outcome, ZeroGuideOutcome.dismissed);
+    expect(log.where((String e) => e == 'dismissed'), hasLength(1));
+    expect(log, isNot(contains('understood')));
+    expect(find.byType(ZeroGuidePlayer), findsNothing);
+  });
+
+  testWidgets('device back on the error state → dismissed', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      load: (ZeroGuideClip c) async => throw const SocketException('offline'),
+    );
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(outcome, ZeroGuideOutcome.dismissed);
+    expect(log, contains('dismissed'));
+    expect(log, isNot(contains('understood')));
+  });
+
+  testWidgets('ดูอีกครั้ง is outlined with the buttonBorder token', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    final ZeroButton replay = tester.widget<ZeroButton>(
+      find.ancestor(
+        of: find.text('ดูอีกครั้ง'),
+        matching: find.byType(ZeroButton),
+      ),
+    );
+    expect(replay.borderColor, const ZeroUiColors().buttonBorder);
+  });
+
+  test('buttonBorder defaults to E5E5E5 and is in copyWith', () {
+    const ZeroUiColors palette = ZeroUiColors();
+    expect(palette.buttonBorder, const Color(0xFFE5E5E5));
+    expect(
+      palette.copyWith(buttonBorder: Colors.blue).buttonBorder,
+      Colors.blue,
+    );
+    expect(
+      palette.copyWith(divider: Colors.grey).buttonBorder,
+      palette.buttonBorder,
+    );
   });
 
   testWidgets('an undecodable file also shows the error state', (

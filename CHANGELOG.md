@@ -48,8 +48,10 @@ HTTP, no GetX, nothing stored.
   - Device back button = ✕ (dismissed).
   - Reduced motion: no autoplay, still frame per tapped step, "เล่นคลิป" to
     play on request, instant colour changes.
-  - Load/decode failure: "โหลดคลิปสาธิตไม่สำเร็จ" + "ลองอีกครั้ง"; steps and
-    "เข้าใจแล้ว" stay usable.
+  - Load/decode failure: "โหลดคลิปสาธิตไม่สำเร็จ" + "ลองอีกครั้ง"; steps stay
+    readable, the bottom buttons ("ดูอีกครั้ง" / "เข้าใจแล้ว") are hidden — ✕ or
+    back closes as `dismissed` through `onDismissed`. A successful retry
+    brings the buttons back.
   - Callbacks only (`onShown`, `onStepChanged`, `onUnderstood`, `onDismissed`,
     `onError`, optional `onClose`) — no logging, no API, no GetX.
   - `loadMedia` (default: `http(s)` via `NetworkAssetBundle`, else the asset
@@ -59,7 +61,9 @@ HTTP, no GetX, nothing stored.
   `parseZeroGuideSpans`, `ZeroGuideStepRow`.
 - `ZeroHelpLabels`: `clipReplay`, `clipPlay`, `clipUnderstood`, `clipClose`,
   `clipLoading`, `clipError`, `clipRetry`, `clipStep` (+ `.en`).
-- `ZeroUiColors`: `guideStepDone`, `guideStepPending`.
+- `ZeroUiColors`: `guideStepDone`, `guideStepPending`, `buttonBorder`
+  (`#E5E5E5`, outline of a secondary button — the player's "ดูอีกครั้ง" /
+  "เล่นคลิป"; same value as `inputBorder`, which stays for input fields).
 - **One new `ZeroUiColors` token, `surface` (`#FFFFFF`)** — background of the
   tour bubble and the how-to sheet, so a dark palette can be passed in. In
   `copyWith`; **no existing token changed**.

@@ -122,7 +122,10 @@ Future<ZeroGuideOutcome> showZeroGuidePlayer(
 ///   hosts it.
 /// * A clip that cannot be loaded or decoded shows "โหลดคลิปสาธิตไม่สำเร็จ"
 ///   with "ลองอีกครั้ง" in place of the picture and reports through
-///   [onError]; the steps stay readable and "เข้าใจแล้ว" still works.
+///   [onError]. The steps stay readable, but the bottom buttons are hidden —
+///   "เข้าใจแล้ว" is not offered for a clip the user could not watch, so the
+///   only ways out are "ลองอีกครั้ง" or ✕ / back, which close as
+///   [ZeroGuideOutcome.dismissed] through [onDismissed].
 ///
 /// UI only: no logging, no API calls, nothing stored — the app records
 /// shown / understood / dismissed itself from the callbacks.
@@ -777,7 +780,9 @@ class ZeroGuidePlayerState extends State<ZeroGuidePlayer>
   }
 
   Widget _buttons() {
-    final bool failed = _error != null;
+    // A clip that failed to load offers no "เข้าใจแล้ว": the user only gets
+    // "ลองอีกครั้ง" on the stage, or ✕ / back (dismissed).
+    if (_error != null) return const SizedBox(height: 20);
     final String first = _reduceMotion && !_ticker.isActive
         ? _labels.clipPlay
         : _labels.clipReplay;
@@ -786,21 +791,20 @@ class ZeroGuidePlayerState extends State<ZeroGuidePlayer>
       child: Row(
         spacing: 12,
         children: [
-          if (!failed)
-            Expanded(
-              child: ZeroButton(
-                text: first,
-                enabled: _timeline != null,
-                height: 48,
-                fontSize: 15,
-                borderRadius: 12,
-                colors: _colors,
-                textColor: _colors.textPrimary,
-                borderColor: _colors.inputBorder,
-                backgroundColor: Colors.transparent,
-                onPressed: _replay,
-              ),
+          Expanded(
+            child: ZeroButton(
+              text: first,
+              enabled: _timeline != null,
+              height: 48,
+              fontSize: 15,
+              borderRadius: 12,
+              colors: _colors,
+              textColor: _colors.textPrimary,
+              borderColor: _colors.buttonBorder,
+              backgroundColor: Colors.transparent,
+              onPressed: _replay,
             ),
+          ),
           Expanded(
             child: ZeroButton(
               text: _labels.clipUnderstood,
