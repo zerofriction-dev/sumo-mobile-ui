@@ -71,6 +71,11 @@ class ZeroUiColors {
 
   final Color primaryFill;
 
+  /// Background of raised surfaces the package paints itself — the tour
+  /// bubble and the how-to sheet. Pass a dark value (with matching
+  /// [textPrimary] / [textSecondary] / [divider]) to use them in a dark theme.
+  final Color surface;
+
   const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
@@ -93,6 +98,7 @@ class ZeroUiColors {
     this.brandLine = const Color(0xFF049540),
     this.divider = const Color(0xFFE0E0E0),
     this.primaryFill = const Color(0xFFE50000),
+    this.surface = const Color(0xFFFFFFFF),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
@@ -118,6 +124,7 @@ class ZeroUiColors {
     Color? brandLine,
     Color? divider,
     Color? primaryFill,
+    Color? surface,
   }) {
     return ZeroUiColors(
       primary: primary ?? this.primary,
@@ -141,6 +148,7 @@ class ZeroUiColors {
       brandLine: brandLine ?? this.brandLine,
       divider: divider ?? this.divider,
       primaryFill: primaryFill ?? this.primaryFill,
+      surface: surface ?? this.surface,
     );
   }
 }

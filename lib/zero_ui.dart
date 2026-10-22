@@ -1,8 +1,9 @@
 /// A reusable, themeable Flutter UI widget library extracted from the Sumo apps.
 ///
 /// Exposes [ZeroTextField], [ZeroDropdownSearch], [ZeroButton], [ZeroCheckbox],
-/// [ZeroPickSourceSheet], [ZeroHelpSheet] and [ZeroDatePicker] — widgets
-/// sharing a single [ZeroUiColors] palette whose defaults reproduce the
+/// [ZeroPickSourceSheet], [ZeroHelpSheet], [ZeroDatePicker] and the
+/// "สอนใช้งาน" set ([ZeroTourRegistry], [ZeroTourAnchor], [ZeroTourOverlay],
+/// [ZeroHelpButton], [ZeroHowToSheet]) — widgets sharing a single [ZeroUiColors] palette whose defaults reproduce the
 /// original design.
 library;
 
@@ -15,3 +16,9 @@ export 'src/bottom_sheet/zero_pick_source_sheet.dart';
 export 'src/bottom_sheet/zero_help_sheet.dart';
 export 'src/date_picker/zero_date_picker.dart';
 export 'src/date_picker/zero_buddhist_calendar_delegate.dart';
+export 'src/how_to/zero_help_labels.dart';
+export 'src/how_to/zero_help_button.dart';
+export 'src/how_to/zero_how_to_sheet.dart';
+export 'src/tour/zero_tour_step.dart';
+export 'src/tour/zero_tour_registry.dart';
+export 'src/tour/zero_tour_overlay.dart';
