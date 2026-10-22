@@ -25,9 +25,13 @@ Widgets:
   `ZeroTourAnchor(id:)` around what a tour highlights + `ZeroTourOverlay.show` /
   `.showAuto` ("พาชมหน้านี้": spotlight + bubble, anchor skip / cancel rules),
   `ZeroHelpButton` (the `?`) and `ZeroHowToSheet` / `showZeroHowToSheet`
-  ("วิธีใช้หน้านี้"). UI only: content comes in as parameters, results go out
-  through callbacks; no network, no GetX. Wording via `ZeroHelpLabels`
-  (Thai default, `ZeroHelpLabels.en`).
+  ("วิธีใช้หน้านี้"), and `ZeroGuidePlayer` / `showZeroGuidePlayer` (the
+  "คลิปสาธิต" player: animated WebP + timed steps, understood / dismissed).
+  UI only: content comes in as parameters, results go out through callbacks;
+  no GetX, no logging. The one network read is the player's default clip
+  loader (`http(s)` URL via `NetworkAssetBundle`) — pass `loadMedia` to use a
+  cached file instead. Wording via `ZeroHelpLabels` (Thai default,
+  `ZeroHelpLabels.en`).
 
 All default to the original Sumo look via **`ZeroUiColors`**; override any color
 per widget with `colors:`.

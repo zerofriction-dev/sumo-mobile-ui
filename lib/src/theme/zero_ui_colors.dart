@@ -52,6 +52,10 @@ class ZeroUiColors {
   /// Fill color of a disabled button.
   final Color buttonDisabled;
 
+  /// Outline of a secondary (outlined) button, e.g. [ZeroGuidePlayer]'s
+  /// "ดูอีกครั้ง" / "เล่นคลิป".
+  final Color buttonBorder;
+
   /// Dark overlay used for a button's splash / highlight.
   final Color overlayDark;
 
@@ -76,6 +80,12 @@ class ZeroUiColors {
   /// [textPrimary] / [textSecondary] / [divider]) to use them in a dark theme.
   final Color surface;
 
+  /// [ZeroGuidePlayer]: number circle of a step the clip has passed.
+  final Color guideStepDone;
+
+  /// [ZeroGuidePlayer]: text of a step the clip has not reached yet.
+  final Color guideStepPending;
+
   const ZeroUiColors({
     this.primary = const Color(0xFFFC0000),
     this.error = const Color(0xFFFC0000),
@@ -92,6 +102,7 @@ class ZeroUiColors {
     this.dropdownItemSelected = const Color(0x0D000000),
     this.textInverse = const Color(0xFFFFFFFF),
     this.buttonDisabled = const Color(0xFFE0E0E0),
+    this.buttonBorder = const Color(0xFFE5E5E5),
     this.overlayDark = const Color(0x80000000),
     this.primaryInk = const Color(0xFFCC0000),
     this.errorTint = const Color(0xFFFFF1F1),
@@ -99,6 +110,8 @@ class ZeroUiColors {
     this.divider = const Color(0xFFE0E0E0),
     this.primaryFill = const Color(0xFFE50000),
     this.surface = const Color(0xFFFFFFFF),
+    this.guideStepDone = const Color(0xFF2ECC71),
+    this.guideStepPending = const Color(0xFFA0A0A0),
   });
 
   /// Returns a copy of this palette with the given fields replaced.
@@ -118,6 +131,7 @@ class ZeroUiColors {
     Color? dropdownItemSelected,
     Color? textInverse,
     Color? buttonDisabled,
+    Color? buttonBorder,
     Color? overlayDark,
     Color? primaryInk,
     Color? errorTint,
@@ -125,6 +139,8 @@ class ZeroUiColors {
     Color? divider,
     Color? primaryFill,
     Color? surface,
+    Color? guideStepDone,
+    Color? guideStepPending,
   }) {
     return ZeroUiColors(
       primary: primary ?? this.primary,
@@ -142,6 +158,7 @@ class ZeroUiColors {
       dropdownItemSelected: dropdownItemSelected ?? this.dropdownItemSelected,
       textInverse: textInverse ?? this.textInverse,
       buttonDisabled: buttonDisabled ?? this.buttonDisabled,
+      buttonBorder: buttonBorder ?? this.buttonBorder,
       overlayDark: overlayDark ?? this.overlayDark,
       primaryInk: primaryInk ?? this.primaryInk,
       errorTint: errorTint ?? this.errorTint,
@@ -149,6 +166,8 @@ class ZeroUiColors {
       divider: divider ?? this.divider,
       primaryFill: primaryFill ?? this.primaryFill,
       surface: surface ?? this.surface,
+      guideStepDone: guideStepDone ?? this.guideStepDone,
+      guideStepPending: guideStepPending ?? this.guideStepPending,
     );
   }
 }
