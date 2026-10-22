@@ -49,6 +49,22 @@ class ZeroButton extends StatefulWidget {
   /// Color palette. Defaults to [ZeroUiColors].
   final ZeroUiColors colors;
 
+  // Accessibility
+
+  /// What a screen reader announces as the button's name.
+  ///
+  /// Null (the default) lets the visible content name the button — [text], or
+  /// whatever text a custom [child] / [countdown] contains. Set it when that
+  /// content does not say what the button does (an icon-only [child], say);
+  /// the visible content is then left out of the announcement so the name is
+  /// not read twice. Semantics only — nothing on screen changes.
+  final String? semanticsLabel;
+
+  /// Announced as the button's value while [isLoading], so a screen-reader
+  /// user hears that the action is in progress rather than only that the
+  /// button went dim. Defaults to `'กำลังดำเนินการ'`.
+  final String loadingSemanticsLabel;
+
   const ZeroButton({
     super.key,
     required this.text,
@@ -73,6 +89,8 @@ class ZeroButton extends StatefulWidget {
     this.unfocusOnTap = true,
     this.unfocusDelay = 0,
     this.colors = const ZeroUiColors(),
+    this.semanticsLabel,
+    this.loadingSemanticsLabel = 'กำลังดำเนินการ',
   });
 
   @override
@@ -116,6 +134,20 @@ class _ZeroButtonState extends State<ZeroButton> {
     // the primary fill) instead of falling back to the dark disabled color.
     final contentColor = active ? resolvedTextColor : _colors.textPrimary;
 
+    // One semantics node for the whole control: a button, enabled exactly when
+    // a tap would do something, and saying so while loading. Semantics only —
+    // nothing here paints or lays out.
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: _isActive,
+      label: widget.semanticsLabel,
+      value: widget.isLoading ? widget.loadingSemanticsLabel : null,
+      child: _buildBody(shape, active, contentColor),
+    );
+  }
+
+  Widget _buildBody(BorderRadius shape, bool active, Color contentColor) {
     return Container(
       width: widget.width,
       height: widget.height,
@@ -137,7 +169,7 @@ class _ZeroButtonState extends State<ZeroButton> {
           highlightColor: _isActive
               ? _colors.overlayDark.withValues(alpha: 0.1)
               : Colors.transparent,
-          child: Padding(
+          child: _excludeContentIfLabelled(Padding(
             padding: widget.padding,
             child: Row(
               mainAxisAlignment: widget.spaceBetween
@@ -182,9 +214,19 @@ class _ZeroButtonState extends State<ZeroButton> {
                 ],
               ],
             ),
-          ),
+          )),
         ),
       ),
+    );
+  }
+
+  /// With a [ZeroButton.semanticsLabel] the visible content is left out of the
+  /// announcement, since the label names the button. Only the content: the
+  /// ink well's tap action above it stays on the button.
+  Widget _excludeContentIfLabelled(Widget content) {
+    return ExcludeSemantics(
+      excluding: widget.semanticsLabel != null,
+      child: content,
     );
   }
 }

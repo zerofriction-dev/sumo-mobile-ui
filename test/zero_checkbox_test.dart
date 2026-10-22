@@ -925,4 +925,81 @@ void main() {
 
     expect(played, isNot(contains('SystemSound.play')));
   });
+
+
+  group('semantics', () {
+    testWidgets('checked, enabled checkbox announces state, label and tap',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroCheckbox(value: true, onChanged: (_) {}, label: 'ยอมรับ'),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroCheckbox)),
+        matchesSemantics(
+          label: 'ยอมรับ',
+          hasCheckedState: true,
+          isChecked: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('unchecked checkbox announces not checked', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroCheckbox(value: false, onChanged: (_) {}, label: 'ยอมรับ'),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroCheckbox)),
+        matchesSemantics(
+          label: 'ยอมรับ',
+          hasCheckedState: true,
+          isChecked: false,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('disabled checkbox announces disabled, keeps checked state',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        const ZeroCheckbox(value: true, onChanged: null, label: 'ยอมรับ'),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroCheckbox)),
+        matchesSemantics(
+          label: 'ยอมรับ',
+          hasCheckedState: true,
+          isChecked: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semantic tap toggles the value', (tester) async {
+      final handle = tester.ensureSemantics();
+      bool? got;
+      await tester.pumpWidget(wrap(
+        ZeroCheckbox(value: false, onChanged: (v) => got = v, label: 'ยอมรับ'),
+      ));
+      tester.semantics.tap(find.semantics.byLabel('ยอมรับ'));
+      await tester.pump();
+      expect(got, isTrue);
+      handle.dispose();
+    });
+  });
 }
