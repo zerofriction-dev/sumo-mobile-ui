@@ -90,4 +90,151 @@ void main() {
     ));
     expect(find.byType(ZeroButton), findsOneWidget);
   });
+
+
+  group('semantics', () {
+    testWidgets('enabled button is an enabled, tappable button named by its text',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroButton(text: 'ยืนยัน', enabled: true, onPressed: () {}),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroButton)),
+        matchesSemantics(
+          label: 'ยืนยัน',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('disabled button announces itself disabled, with no tap action',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        const ZeroButton(text: 'ยืนยัน'),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroButton)),
+        matchesSemantics(
+          label: 'ยืนยัน',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('enabled but without onPressed reads as disabled', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        const ZeroButton(text: 'ยืนยัน', enabled: true),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroButton)),
+        matchesSemantics(
+          label: 'ยืนยัน',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('loading button is disabled and says it is in progress',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroButton(
+          text: 'ยืนยัน',
+          enabled: true,
+          isLoading: true,
+          onPressed: () {},
+        ),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroButton)),
+        matchesSemantics(
+          label: 'ยืนยัน',
+          value: 'กำลังดำเนินการ',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('loadingSemanticsLabel overrides the in-progress wording',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroButton(
+          text: 'Pay',
+          enabled: true,
+          isLoading: true,
+          loadingSemanticsLabel: 'Processing',
+          onPressed: () {},
+        ),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroButton)),
+        matchesSemantics(
+          label: 'Pay',
+          value: 'Processing',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semanticsLabel replaces the visible content in the name',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroButton(
+          text: '',
+          enabled: true,
+          semanticsLabel: 'ถัดไป',
+          onPressed: () {},
+          child: const Icon(Icons.arrow_forward),
+        ),
+      ));
+      expect(
+        tester.getSemantics(find.byType(ZeroButton)),
+        matchesSemantics(
+          label: 'ถัดไป',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('semantic tap still runs onPressed', (tester) async {
+      final handle = tester.ensureSemantics();
+      var taps = 0;
+      await tester.pumpWidget(wrap(
+        ZeroButton(text: 'Go', enabled: true, onPressed: () => taps++),
+      ));
+      tester.semantics.tap(find.semantics.byLabel('Go'));
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+      handle.dispose();
+    });
+  });
 }

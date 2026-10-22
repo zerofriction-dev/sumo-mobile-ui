@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_ui/zero_ui.dart';
 
@@ -219,5 +220,176 @@ void main() {
     await tester.enterText(find.byType(TextField), 'พิมพ์ทับ');
     expect(second.text, 'พิมพ์ทับ');
     expect(first.text, 'อันเก่า');
+  });
+
+
+  group('semantics', () {
+    Finder clearButton() => find.byType(IconButton);
+
+    testWidgets('clear button is a labelled button', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroTextField(
+          keyboardType: TextInputType.text,
+          controller: TextEditingController(text: 'abc'),
+        ),
+      ));
+      expect(
+        tester.getSemantics(clearButton()),
+        matchesSemantics(
+          label: 'ล้างข้อความ',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('clearButtonSemanticsLabel overrides the clear button name',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroTextField(
+          keyboardType: TextInputType.text,
+          clearButtonSemanticsLabel: 'Clear',
+          controller: TextEditingController(text: 'abc'),
+        ),
+      ));
+      expect(
+        tester.getSemantics(clearButton()),
+        matchesSemantics(
+          label: 'Clear',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    for (final m3 in [false, true]) {
+      testWidgets('clear button answers taps across a 44x44 area (M3: $m3)',
+          (tester) async {
+        Future<TextEditingController> pumpField() async {
+          final controller = TextEditingController(text: 'abc');
+          await tester.pumpWidget(MaterialApp(
+            theme: ThemeData(useMaterial3: m3),
+            home: Scaffold(
+              body: ZeroTextField(
+                keyboardType: TextInputType.text,
+                controller: controller,
+              ),
+            ),
+          ));
+          return controller;
+        }
+
+        var controller = await pumpField();
+        final Offset center = tester.getCenter(find.byIcon(Icons.close_rounded));
+        // Every point within 21 of the icon centre (just inside 44x44).
+        const double r = 21;
+        for (final Offset d in const [
+          Offset(-r, -r), Offset(r, -r), Offset(-r, r), Offset(r, r),
+          Offset(-r, 0), Offset(r, 0), Offset(0, -r), Offset(0, r),
+        ]) {
+          controller = await pumpField();
+          await tester.tapAt(center + d);
+          await tester.pumpAndSettle();
+          expect(controller.text, isEmpty, reason: "tap at offset $d (M3: $m3)");
+        }
+      });
+    }
+
+    testWidgets('a tap well outside the 44x44 area does not clear',
+        (tester) async {
+      final controller = TextEditingController(text: 'abc');
+      await tester.pumpWidget(wrap(
+        ZeroTextField(keyboardType: TextInputType.text, controller: controller),
+      ));
+      final Offset center = tester.getCenter(find.byIcon(Icons.close_rounded));
+      await tester.tapAt(center - const Offset(60, 0));
+      await tester.pumpAndSettle();
+      expect(controller.text, 'abc');
+    });
+
+    testWidgets('clear button layout is unchanged (field stays 48 tall)',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(useMaterial3: false),
+        home: Scaffold(
+          body: ZeroTextField(
+            keyboardType: TextInputType.text,
+            controller: TextEditingController(text: 'abc'),
+          ),
+        ),
+      ));
+      expect(tester.getSize(find.byType(TextFormField)).height, 48);
+      expect(tester.getSize(find.byType(IconButton)), const Size(24, 30));
+    });
+
+    testWidgets('error is read as part of the field, which reports invalid',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        ZeroTextField(
+          keyboardType: TextInputType.text,
+          label: 'ชื่อ',
+          isRequired: false,
+          hasError: true,
+          errorText: 'กรุณากรอกชื่อ',
+          controller: TextEditingController(text: 'x'),
+        ),
+      ));
+      final SemanticsNode field =
+          tester.getSemantics(find.byType(EditableText));
+      expect(field.label, 'ชื่อ');
+      expect(field.hint, 'กรุณากรอกชื่อ');
+      expect(field.validationResult, SemanticsValidationResult.invalid);
+      // The visible line is not announced a second time on its own.
+      expect(find.semantics.byLabel('กรุณากรอกชื่อ'), findsNothing);
+      expect(find.text('กรุณากรอกชื่อ'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('hasError without text still reports invalid', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        const ZeroTextField(
+          keyboardType: TextInputType.text,
+          label: 'ชื่อ',
+          isRequired: false,
+          hasError: true,
+        ),
+      ));
+      final SemanticsNode field =
+          tester.getSemantics(find.byType(EditableText));
+      expect(field.validationResult, SemanticsValidationResult.invalid);
+      expect(field.hint, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets('no error: field stays valid with no error hint', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(
+        const ZeroTextField(
+          keyboardType: TextInputType.text,
+          label: 'ชื่อ',
+          isRequired: false,
+          errorText: 'กรุณากรอกชื่อ',
+        ),
+      ));
+      final SemanticsNode field =
+          tester.getSemantics(find.byType(EditableText));
+      expect(field.validationResult, isNot(SemanticsValidationResult.invalid));
+      expect(field.hint, isNot(contains('กรุณากรอกชื่อ')));
+      handle.dispose();
+    });
   });
 }

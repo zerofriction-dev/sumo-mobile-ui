@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/zero_ui_colors.dart';
@@ -43,6 +46,11 @@ class ZeroTextField extends StatefulWidget {
   /// Color palette used by the field. Defaults to [ZeroUiColors].
   final ZeroUiColors colors;
 
+  /// What a screen reader calls the built-in clear button. Defaults to
+  /// `'ล้างข้อความ'`. Semantics only — the button still shows no tooltip, so
+  /// nothing on screen changes.
+  final String clearButtonSemanticsLabel;
+
   const ZeroTextField({
     super.key,
     this.controller,
@@ -76,6 +84,7 @@ class ZeroTextField extends StatefulWidget {
     this.isRequired = true,
     this.onEmptyChanged,
     this.colors = const ZeroUiColors(),
+    this.clearButtonSemanticsLabel = 'ล้างข้อความ',
   });
 
   @override
@@ -87,6 +96,9 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
   late FocusNode _focusNode;
   bool _hasText = false;
   bool _isFocused = false;
+
+  /// Locates the clear button for [_ClearButtonTapArea].
+  final GlobalKey _clearButtonKey = GlobalKey();
 
   ZeroUiColors get _colors => widget.colors;
 
@@ -240,7 +252,7 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
                 : null,
             child: AbsorbPointer(
               absorbing: widget.readOnly,
-              child: TextFormField(
+              child: _wrapField(TextFormField(
                 focusNode: _focusNode,
                 onEditingComplete: widget.onEditingComplete,
                 inputFormatters: widget.inputFormatters,
@@ -337,15 +349,16 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
                   ),
                 ),
                 validator: widget.validator,
-              ),
+              )),
             ),
           ),
-          if (widget.hasError &&
-              widget.errorText != null &&
-              widget.errorText!.isNotEmpty)
+          if (_showsErrorText)
             Padding(
               padding: const EdgeInsets.only(top: 10, left: 15),
-              child: Text(
+              // Already read out as part of the field (see
+              // [_withErrorSemantics]); excluded here so it is not read a
+              // second time as a stray line of text after the field.
+              child: ExcludeSemantics(child: Text(
                 widget.errorText!,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -355,12 +368,42 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
                   fontWeight: FontWeight.w400,
                   height: 1.2,
                 ),
-              ),
+              )),
             ),
         ],
       ),
     );
   }
+
+  bool get _showsErrorText =>
+      widget.hasError &&
+      widget.errorText != null &&
+      widget.errorText!.isNotEmpty;
+
+  /// Ties the externally controlled error to the field's own semantics node.
+  ///
+  /// The error text is drawn as a separate line under the field rather than
+  /// through [InputDecoration.errorText] (which would change the layout), so
+  /// on its own a screen reader would announce the field as valid and read the
+  /// message as unrelated text somewhere after it. A non-container [Semantics]
+  /// right above the [TextFormField] merges into the text field's node: the
+  /// field reports itself invalid and carries the message as its hint, read
+  /// right after its label and value. Semantics only — nothing is painted.
+  Widget _withErrorSemantics(Widget field) {
+    if (!widget.hasError) return field;
+    return Semantics(
+      validationResult: SemanticsValidationResult.invalid,
+      hint: _showsErrorText ? widget.errorText : null,
+      child: field,
+    );
+  }
+
+  /// The [TextFormField] with its error semantics and the clear button's
+  /// enlarged tap area. Neither lays out or paints anything.
+  Widget _wrapField(Widget field) => _ClearButtonTapArea(
+        buttonKey: _clearButtonKey,
+        child: _withErrorSemantics(field),
+      );
 
   Widget? _buildPrefixIcon() {
     final icon = widget.prefixIcon;
@@ -388,10 +431,12 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
       return Padding(
         padding: const EdgeInsets.only(right: 16),
         child: IconButton(
+          key: _clearButtonKey,
           icon: Icon(
             Icons.close_rounded,
             size: 20,
             color: _colors.iconSecondary,
+            semanticLabel: widget.clearButtonSemanticsLabel,
           ),
           onPressed: _clearText,
           padding: EdgeInsets.zero,
@@ -401,5 +446,86 @@ class _ZeroTextFieldState extends State<ZeroTextField> {
     }
 
     return null;
+  }
+}
+
+/// Smallest tap area the clear button answers to, in logical pixels.
+const double _kMinClearTapSize = 44;
+
+/// Gives the clear button a tap area of at least [_kMinClearTapSize] square
+/// without changing how anything is laid out or painted.
+///
+/// The button is a 20pt icon; under Material 2 (which all three apps use) it
+/// lays out only 24x30, and growing it would grow the field or push its text.
+/// So the layout stays as it is and only hit testing changes: this box wraps
+/// the whole text field, and a pointer that lands within a
+/// [_kMinClearTapSize] square centred on the button — but outside the button
+/// itself — is sent straight to the button (moved onto its nearest edge)
+/// instead of to the text under it. Everywhere else, including on the button
+/// itself, hit testing is exactly what it was.
+class _ClearButtonTapArea extends SingleChildRenderObjectWidget {
+  final GlobalKey buttonKey;
+
+  const _ClearButtonTapArea({
+    required this.buttonKey,
+    required Widget super.child,
+  });
+
+  @override
+  _RenderClearButtonTapArea createRenderObject(BuildContext context) =>
+      _RenderClearButtonTapArea(buttonKey);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderClearButtonTapArea renderObject,
+  ) {
+    renderObject.buttonKey = buttonKey;
+  }
+}
+
+class _RenderClearButtonTapArea extends RenderProxyBox {
+  _RenderClearButtonTapArea(this.buttonKey);
+
+  /// Hit testing only — changing it needs no layout or paint.
+  GlobalKey buttonKey;
+
+  /// Keeps a pointer moved onto the button strictly inside its bounds, which
+  /// are half-open.
+  static const double _edgeInset = 0.01;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final RenderObject? found = buttonKey.currentContext?.findRenderObject();
+    if (found is RenderBox &&
+        found.attached &&
+        found.hasSize &&
+        size.contains(position)) {
+      final Matrix4 toHere = found.getTransformTo(this);
+      final Rect buttonRect =
+          MatrixUtils.transformRect(toHere, Offset.zero & found.size);
+      final Rect tapRect = Rect.fromCenter(
+        center: buttonRect.center,
+        width: math.max(buttonRect.width, _kMinClearTapSize),
+        height: math.max(buttonRect.height, _kMinClearTapSize),
+      );
+      if (tapRect.contains(position) && !buttonRect.contains(position)) {
+        final Offset onButton = Offset(
+          position.dx.clamp(buttonRect.left, buttonRect.right - _edgeInset),
+          position.dy.clamp(buttonRect.top, buttonRect.bottom - _edgeInset),
+        );
+        final bool hit = result.addWithPaintTransform(
+          transform: toHere,
+          position: onButton,
+          hitTest: (BoxHitTestResult result, Offset local) =>
+              found.hitTest(result, position: local),
+        );
+        if (hit) {
+          result.add(BoxHitTestEntry(this, position));
+          return true;
+        }
+      }
+    }
+    return super.hitTest(result, position: position);
   }
 }
