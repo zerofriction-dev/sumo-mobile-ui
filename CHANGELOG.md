@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.18.0
+
+New sibling package **`sumo_shared`** at `packages/sumo_shared` (tech debt h18,
+phase 1). Holds the non-UI code that provider, company and super-app each kept
+a copy of: input formatters, validators, small helpers, enums and plain JSON
+models. No GetX, no routes, no widgets.
+`zero_ui` itself is unchanged; this tag only exists so the apps can pin
+`sumo_shared` with:
+
+```yaml
+sumo_shared:
+  git:
+    url: https://github.com/zerofriction-dev/sumo-mobile-ui.git
+    path: packages/sumo_shared
+    ref: v0.18.0
+```
+
+Root `analysis_options.yaml` now excludes `packages/**`; analyze/test the
+nested package from its own folder.
+
 ## 0.17.0
 
 New **"สอนใช้งาน"** widgets (spec `knowledge-base/specs/kc-help-screens.md`
